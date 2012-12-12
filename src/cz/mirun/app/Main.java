@@ -41,6 +41,9 @@ static Map<String, Integer> variableMap = new HashMap<String, Integer>();
 
 static List<String> compileOut = new ArrayList<String>();
 
+static List<Integer> intVarCodes = new ArrayList<Integer>();
+static List<Integer> stringVarCodes = new ArrayList<Integer>();
+
 static ByteCode byteCode = new ByteCode();
 
 private static List<AST> getAstChildren(AST node)
@@ -242,6 +245,10 @@ private static void compile_expression(AST node) {
 	{
 		byteCode.addInstruction(new Instruction(Instruction.InsSet.PUSH_NUMBER, tokenName));
 	}
+	else if (isString(tokenName))
+	{
+		byteCode.addInstruction(new Instruction(Instruction.InsSet.PUSH_STRING, tokenName));
+	}
 	else
 		// je to literal
 	{
@@ -313,7 +320,8 @@ private static void compile_assignment_expression(AST node) {
 		AST node_token_VARIABLE = node.getFirstChild();
 		AST node_token_VALUE = node_token_VARIABLE.getNextSibling();
 		compile_expression(node_token_VALUE);
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, variableMap.get(node_token_VARIABLE.getText()) + "", "int"));
+		String varType = getVarType(variableMap.get(node_token_VARIABLE.getText()));
+		byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, variableMap.get(node_token_VARIABLE.getText()) + "", varType));
 	}
 }
 
@@ -402,11 +410,13 @@ private static void compile_variable_definition(AST node) {
 		if (isNumeric(varVal)) {
 			// v deklaraci prirazujeme cislo, muzeme ho hodit na stack a nahrat do promenne
 			byteCode.addInstruction(new Instruction(Instruction.InsSet.PUSH_NUMBER, varVal));
+			intVarCodes.add(BC_VariableCount);
 		}
 		else if (isString(varVal)) {
 			// Je to String
 			varVal = varVal.substring(1, varVal.length()-1);
 			byteCode.addInstruction(new Instruction(Instruction.InsSet.PUSH_STRING, varVal));
+			stringVarCodes.add(BC_VariableCount);
 		}
 		else {
 			// Prirazujeme nejaky vyraz, musime ho nejdriv zpracovat a vysledek pak hodit do promenne
@@ -517,6 +527,12 @@ private static void traverse (AST node, int depth)
  
  private static boolean isString(String str) {
 	 return str.charAt(0) == '"';
+ }
+ 
+ private static String getVarType(Integer varCode) {;
+	 if (intVarCodes.contains(varCode)) return "int";
+	 else if (stringVarCodes.contains(varCode)) return "String";
+	 return null;
  }
 
 }
