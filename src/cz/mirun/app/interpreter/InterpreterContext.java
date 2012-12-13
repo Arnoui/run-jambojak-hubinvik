@@ -53,5 +53,15 @@ public class InterpreterContext {
 		stack.clear();
 		varPool.clear();
 	}
+
+	public Map<String, ValuePair> getVarPool() {
+		return varPool;
+	}
+
+	public Stack<ValuePair> getStack() {
+		return stack;
+	}
+	
+	
 	
 }

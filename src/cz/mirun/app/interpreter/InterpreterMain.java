@@ -25,11 +25,11 @@ public class InterpreterMain {
 	
 	public static void main(String[] args) throws Exception {
 				
-		 if (args.length != 1) {
-	         System.out.println("BAD USAGE : call with compileSource.bat <filename>");
-	         System.exit(1);
-	     }
-		String filename = args[0];
+		 //if (args.length != 1) {
+	         //System.out.println("BAD USAGE : call with compileSource.bat <filename>");
+	         //System.exit(1);
+	     //}
+		String filename = "out.txt";
 		
 		instructions = new ArrayList<String>();
 		maxPC = 0;
@@ -45,10 +45,15 @@ public class InterpreterMain {
 		
 		executeByteCode();
 	
-		ValuePair returnResult =InterpreterContext.getInstance().popFromStack();
+		//ValuePair returnResult = InterpreterContext.getInstance().popFromStack();
 		//System.out.println(returnResult.getFirst().toString() + " " + returnResult.getSecond().toString());
 	
-		writeOutput(filename, returnResult);
+		//writeOutput(filename, returnResult);
+		
+		System.out.println(InterpreterContext.getInstance().getVarPool().size());
+		System.out.println(InterpreterContext.getInstance().getFromVarPool("1").getFirst().getClass().getName());
+		Integer[] arr = (Integer[]) InterpreterContext.getInstance().getFromVarPool("1").getFirst();
+		System.out.println(arr[0]);
 		InterpreterContext.getInstance().cleanContext();
 		}
 	
@@ -109,6 +114,9 @@ public class InterpreterMain {
 			ValuePair [] params = new ValuePair[lineParams.length - 2];
 			for (int i = 3; i < lineParams.length; i++) params[i-3] = InterpreterContext.getInstance().popFromStack();
 		}
+		else if (lineParams.length >= 2 && instr.equals("NEW_ARRAY")) { 
+			createNewArray(lineParams);
+		}
 		else if (lineParams.length == 3) { // Dve hodnoty, nazev instrukce a parametr
 			instrParam = lineParams[2];
 			if (instr.equals("PUSH_NUMBER")) InterpreterContext.getInstance().pushToStack(new ValuePair(instrParam, "int"));
@@ -132,10 +140,35 @@ public class InterpreterMain {
 				if (varVal instanceof ValuePair) InterpreterContext.getInstance().insertIntoVarPool(instrParam, (ValuePair) varVal);
 				else InterpreterContext.getInstance().insertIntoVarPool(instrParam, new ValuePair(varVal, type));
 			}
+			else if (instr.equals("STORE_ARRAY")) {
+				ValuePair valPair = InterpreterContext.getInstance().popFromStack();
+				Object toStore = valPair.getFirst();
+				Integer index = Integer.parseInt(lineParams[3]);
+				Object [] targetArr = (Object[]) InterpreterContext.getInstance().getFromVarPool(lineParams[2]).getFirst();
+				targetArr[index] = Integer.parseInt(toStore.toString());
+
+			}
 		}
 		
 	}
 	
+	private static void createNewArray(String[] lineParams) {
+		String instrParam = lineParams[2];
+		String arrType = lineParams[3];
+		if (lineParams.length == 4) {
+			ValuePair valPair = InterpreterContext.getInstance().popFromStack();
+			Integer arrLen;
+			if (valPair.getFirst() instanceof String) arrLen = Integer.parseInt(valPair.getFirst().toString());
+			else arrLen = (Integer) valPair.getFirst();
+			InterpreterContext.getInstance().insertIntoVarPool(instrParam, new ValuePair(new Integer[arrLen], arrType));
+		} else {
+			Integer arrLen = Integer.parseInt(lineParams[3]);
+			arrType = lineParams[4];
+			InterpreterContext.getInstance().insertIntoVarPool(instrParam, new ValuePair(new Integer[arrLen], arrType));
+		}
+		
+	}
+
 	/**
 	 * A method handling jumps based on the satisfaction of the specified logical expression 
 	 * 

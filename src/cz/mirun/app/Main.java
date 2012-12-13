@@ -442,8 +442,14 @@ private static void compile_variable_definition(AST node) {
 	} else { // ok, pracujeme s poli
 		if (node_token_VARTYPE.getText().equals(node_token_ASSIGNCHECK.getText())) { // deklarujeme nove pole
 			AST node_token_ARRLEN = node_token_ARRBRACKET.getFirstChild().getNextSibling().getFirstChild();
-			int arrLen = Integer.parseInt(node_token_ARRLEN.getText());
-			byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, BC_VariableCount + " " + arrLen, node_token_VARTYPE.getText()));
+			try {
+				int arrLen = Integer.parseInt(node_token_ARRLEN.getText());
+				byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, BC_VariableCount + " " + arrLen, node_token_VARTYPE.getText()));
+			} catch (NumberFormatException nfe) { // Pokusili jsme se vytvorit array o parametricke delce
+				String varName = node_token_ARRLEN.getText();
+				byteCode.addInstruction(new Instruction(Instruction.InsSet.LOAD_VAR, variableMap.get(varName) + ""));
+				byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, BC_VariableCount + "", node_token_VARTYPE.getText()));
+			}		
 			if (node_token_VARNAME.getText().equals("int_array")) intVarCodes.add(BC_VariableCount);
 			else stringVarCodes.add(BC_VariableCount);
 		} else { // jedna se o prirazeni hodnoty polozky nejakeho existujiciho pole do promenne
