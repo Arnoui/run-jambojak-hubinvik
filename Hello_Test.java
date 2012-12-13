@@ -2,8 +2,10 @@ class Test
 {
 	int main()
 	{
-		String filename = "Neco";
-		filename = "aaa";
-		String a = open_file(filename);
+		string_array arr = string_array[10];
+		int i = arr[2];
+		int j = 3;
+		int k = arr[0];
+		arr = string_array[k];
 	}
 }

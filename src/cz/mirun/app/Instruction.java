@@ -6,7 +6,8 @@ import java.util.List;
 public class Instruction
 {
 	
-	public enum InsSet { PUSH_NUMBER, PUSH_STRING, STORE_VAR, LOAD_VAR,
+	public enum InsSet { PUSH_NUMBER, PUSH_STRING, NEW_ARRAY, STORE_VAR, LOAD_VAR,
+						 STORE_ARRAY, LOAD_ARRAY,
 						 PLUS, MINUS, MULTIPLY,
 						 IF_GT_JUMP, IF_LT_JUMP, IF_EQ_JUMP, IF_NEQ_JUMP, IF_GTE_JUMP, IF_LTE_JUMP,
 						 JUMP,

@@ -312,11 +312,26 @@ private static void compile_arithmetic_expression(AST node) {
 
 private static void compile_assignment_expression(AST node) {
 	if (node.getFirstChild().getText().equals(Constants.LEFT_SQ_BR))
-	{ // array assign
+	{ // array value assign
 		AST node_token_VARIABLE = node.getFirstChild().getFirstChild();
 		AST node_token_INDEX = node_token_VARIABLE.getNextSibling().getFirstChild();
 		AST node_token_VALUE = node.getFirstChild().getNextSibling();
-	} else {
+		compile_expression(node_token_VALUE);
+		byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_ARRAY, variableMap.get(node_token_VARIABLE.getText()) + "", node_token_INDEX.getText()));
+	} else if (node.getFirstChild().getNextSibling() != null && node.getFirstChild().getNextSibling().getText().equals(Constants.LEFT_SQ_BR)) {
+		AST node_token_VARNAME = node.getFirstChild();
+		AST node_token_VARTYPE = node_token_VARNAME.getNextSibling().getFirstChild();
+		AST node_token_ARRLEN = node_token_VARTYPE.getNextSibling().getFirstChild();
+		try {
+			int arrLen = Integer.parseInt(node_token_ARRLEN.getText());
+			byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, variableMap.get(node_token_VARNAME.getText()) + " " + arrLen, node_token_VARTYPE.getText()));
+		} catch (NumberFormatException nfe) { // Pokusili jsme se vytvorit array o parametricke delce
+			String varName = node_token_ARRLEN.getText();
+			byteCode.addInstruction(new Instruction(Instruction.InsSet.LOAD_VAR, variableMap.get(varName) + ""));
+			byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, variableMap.get(node_token_VARNAME.getText()) + "", node_token_VARTYPE.getText()));
+		}		
+	}	
+	else {
 		AST node_token_VARIABLE = node.getFirstChild();
 		AST node_token_VALUE = node_token_VARIABLE.getNextSibling();
 		compile_expression(node_token_VALUE);
@@ -386,13 +401,12 @@ private static void compile_variable_definition(AST node) {
 	AST node_token_VARTYPE;
 	AST dummy = node.getFirstChild(); // MODIFIERS
 	AST node_token_TYPE = dummy.getNextSibling();
-	if (node_token_TYPE.getFirstChild().getText().equals(Constants.LEFT_SQ_BR)) {
-		AST node_token_ARRTYPE = node_token_TYPE.getFirstChild();
-		node_token_VARTYPE = node_token_ARRTYPE.getFirstChild();
+	AST node_token_ARRBRACKET = node_token_TYPE.getNextSibling().getNextSibling().getFirstChild().
+			getFirstChild(); 
+	if (node_token_ARRBRACKET.getText().equals(Constants.LEFT_SQ_BR))
 		isArray = true;
-	} else {
-		node_token_VARTYPE = node_token_TYPE.getFirstChild();
-	}
+	node_token_VARTYPE = node_token_TYPE.getFirstChild();
+	
 	AST node_token_VARNAME = node_token_TYPE.getNextSibling();
 	
 	AST node_token_ASSIGN = node_token_VARNAME.getNextSibling();
@@ -400,13 +414,14 @@ private static void compile_variable_definition(AST node) {
 		// not an assignment, just declaring, can ignore
 		return;
 	}
+
+	AST node_token_ASSIGNCHECK = node_token_ASSIGN.getFirstChild().getFirstChild().getFirstChild();
 	
 	if (!isArray) {
 		AST node_token_VARVAL = node_token_ASSIGN.getFirstChild().getFirstChild();
 		String varVal = "";
 		if (node_token_VARVAL.getText().equals(Constants.MINUS)) varVal = Constants.MINUS + node_token_VARVAL.getFirstChild().getText();
 		else varVal = node_token_VARVAL.getText();
-		System.out.println(varVal);
 		if (isNumeric(varVal)) {
 			// v deklaraci prirazujeme cislo, muzeme ho hodit na stack a nahrat do promenne
 			byteCode.addInstruction(new Instruction(Instruction.InsSet.PUSH_NUMBER, varVal));
@@ -424,12 +439,22 @@ private static void compile_variable_definition(AST node) {
 			
 		}
 		byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, BC_VariableCount + "", node_token_VARTYPE.getText()));
-		variableMap.put(node_token_VARNAME.getText(), BC_VariableCount);
-		BC_VariableCount++;
-	} else {
-		AST node_token_ARRLEN = node_token_ASSIGN.getFirstChild().getFirstChild().getFirstChild().getNextSibling().getFirstChild().getFirstChild();
+	} else { // ok, pracujeme s poli
+		if (node_token_VARTYPE.getText().equals(node_token_ASSIGNCHECK.getText())) { // deklarujeme nove pole
+			AST node_token_ARRLEN = node_token_ARRBRACKET.getFirstChild().getNextSibling().getFirstChild();
+			int arrLen = Integer.parseInt(node_token_ARRLEN.getText());
+			byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, BC_VariableCount + " " + arrLen, node_token_VARTYPE.getText()));
+			if (node_token_VARNAME.getText().equals("int_array")) intVarCodes.add(BC_VariableCount);
+			else stringVarCodes.add(BC_VariableCount);
+		} else { // jedna se o prirazeni hodnoty polozky nejakeho existujiciho pole do promenne
+			AST node_token_INDEX = node_token_ASSIGNCHECK.getNextSibling().getFirstChild();
+			byteCode.addInstruction(new Instruction(Instruction.InsSet.LOAD_ARRAY, variableMap.get(node_token_ASSIGNCHECK.getText()) + "",
+					node_token_INDEX.getText()));
+			byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, BC_VariableCount + "", node_token_VARTYPE.getText()));
+		}
 	}
-	
+	variableMap.put(node_token_VARNAME.getText(), BC_VariableCount);
+	BC_VariableCount++;	
 }
 
 	
