@@ -42,7 +42,7 @@ public class ByteCode {
 		int i = 0;
 		for (Instruction ins : instructions)
 		{
-			System.out.println(i + ": " + ins.opcode + "" + (ins.operandsToString().length() > 0 ? " " + ins.operandsToString() : "") + "" + (ins.label != -1 ? " " + ins.label : ""));
+			System.out.println(i + ": " + ins.opcode + "" + (ins.operandsToString().length() > 0 ? " " + ins.operandsToString() : "") + "" + (ins.label != null && ins.label != -1 ? " " + ins.label : ""));
 			i++;
 		}
 	}
@@ -66,7 +66,14 @@ public class ByteCode {
 	
 	public void changeOperand(int indexOfInstruction, int indexOfOperand, String operand)
 	{
-		this.instructions.get(indexOfInstruction).operands.add(indexOfOperand, operand);
+		this.instructions.get(indexOfInstruction).operands.remove(indexOfOperand);
+		this.instructions.get(indexOfInstruction).operands.add(operand); 
 	}
 
+	public List<Instruction> getInstructions() {
+		return instructions;
+	}
+
+	
+	
 }

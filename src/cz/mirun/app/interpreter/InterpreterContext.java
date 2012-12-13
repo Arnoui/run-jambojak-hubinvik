@@ -17,10 +17,12 @@ public class InterpreterContext {
 	
 	private Map<String, ValuePair> varPool;
 	private Stack<ValuePair> stack;
+	private Stack<Integer> returnStack;
 	
 	private InterpreterContext() {
 		varPool = new HashMap<String, ValuePair>();
 		stack = new Stack<ValuePair>();
+		returnStack = new Stack<Integer>();
 	}
 	
 	public static InterpreterContext getInstance() {
@@ -34,6 +36,14 @@ public class InterpreterContext {
 	
 	public ValuePair popFromStack() {
 		return this.stack.pop();
+	}
+	
+	public void pushToRetStack(Integer obj) {
+		this.returnStack.push(obj);
+	}
+	
+	public Integer popFromRetStack() {
+		return this.returnStack.pop();
 	}
 	
 	public ValuePair getFromVarPool(String key) {

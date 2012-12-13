@@ -50,10 +50,7 @@ public class InterpreterMain {
 	
 		//writeOutput(filename, returnResult);
 		
-		System.out.println(InterpreterContext.getInstance().getVarPool().size());
-		System.out.println(InterpreterContext.getInstance().getFromVarPool("1").getFirst().getClass().getName());
-		Integer[] arr = (Integer[]) InterpreterContext.getInstance().getFromVarPool("1").getFirst();
-		System.out.println(arr[0]);
+		System.out.println(InterpreterContext.getInstance().getVarPool().get("0").getFirst());
 		InterpreterContext.getInstance().cleanContext();
 		}
 	
@@ -90,7 +87,9 @@ public class InterpreterMain {
 	private static void executeByteCode() {
 		for (; currPC < maxPC; currPC++) {
 			String line = instructions.get(currPC);
-			handleParams(line.split(" "));
+			String[] lineParams = line.split(" ");
+			if (currPC > 0 && lineParams[1].equals("FUNSTART")) break; // Program should never reach this on its own
+			handleParams(lineParams);
 		}
 	}
 
@@ -104,10 +103,13 @@ public class InterpreterMain {
 		String instr = lineParams[1]; // prvni je cislo radky
 		String instrParam;
 		String type;
-		
+		System.out.println(instr);
 		if (lineParams.length == 2) { // Jen jedna hodnota, coz je nazev instrukce bajtkodu bez dalsich hodnot
 			if (instr.equals("MULTIPLY") || instr.equals("PLUS") || instr.equals("MINUS")) 
-				InterpreterContext.getInstance().pushToStack(new ValuePair(MethodLookup.performArithmetic(instr), "int"));		
+				InterpreterContext.getInstance().pushToStack(new ValuePair(MethodLookup.performArithmetic(instr), "int"));
+			else if (instr.equals("RETURN")) {
+				currPC = InterpreterContext.getInstance().popFromRetStack();
+			}
 		}	
 		else if (lineParams.length >= 2 && instr.equals("FUNCALL")) { 
 			String funName = lineParams[2];
@@ -125,7 +127,11 @@ public class InterpreterMain {
 				handleLogicalCondition(instr, instrParam);
 			}
 			else if (instr.equals("JUMP")) currPC = Integer.parseInt(instrParam)-1; // gotta decrement because the PC is automatically incremented in executeByteCode for iteration
-			else if (instr.equals("NOP")) return;
+			else if (instr.equals("FUNJUMP")) {
+				InterpreterContext.getInstance().pushToRetStack(currPC);
+				currPC = Integer.parseInt(instrParam);
+			}
+			else if (instr.equals("NOP") || instr.equals("FUNSTART")) return;
 			else if (instr.equals("LOAD_VAR")) {
 				ValuePair varVal = InterpreterContext.getInstance().getFromVarPool(instrParam);
 				InterpreterContext.getInstance().pushToStack(varVal);
@@ -142,11 +148,8 @@ public class InterpreterMain {
 			}
 			else if (instr.equals("STORE_ARRAY")) {
 				ValuePair valPair = InterpreterContext.getInstance().popFromStack();
-				Object toStore = valPair.getFirst();
 				Integer index = Integer.parseInt(lineParams[3]);
-				Object [] targetArr = (Object[]) InterpreterContext.getInstance().getFromVarPool(lineParams[2]).getFirst();
-				targetArr[index] = Integer.parseInt(toStore.toString());
-
+				ValuePairHelper.storeToArray(valPair, lineParams[2], index);
 			}
 		}
 		

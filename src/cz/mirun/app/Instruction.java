@@ -10,16 +10,16 @@ public class Instruction
 						 STORE_ARRAY, LOAD_ARRAY,
 						 PLUS, MINUS, MULTIPLY,
 						 IF_GT_JUMP, IF_LT_JUMP, IF_EQ_JUMP, IF_NEQ_JUMP, IF_GTE_JUMP, IF_LTE_JUMP,
-						 JUMP,
-						 NOP,
+						 JUMP, FUNSTART, FUNJUMP, // JUMP == FUNJUMP, jde jen o logicke odliseni pro prehlednost 
+						 NOP, RETURN,
 						 FUNCALL
 					   };
 	
 	public InsSet opcode;
 	public List<String> operands;
-	public int label;
+	public Integer label;
 	
-	public Instruction(InsSet opcode, String operand1, String operand2, int label)
+	public Instruction(InsSet opcode, String operand1, String operand2, Integer label)
 	{
 		this.opcode = opcode;
 		
@@ -83,7 +83,7 @@ public class Instruction
 		String out = "";
 		for (String op : operands)
 		{
-			out = out.concat(op + " ");
+			if (!op.isEmpty()) out = out.concat(op + " ");
 		}
 		
 		return (out);

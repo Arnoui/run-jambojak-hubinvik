@@ -19,6 +19,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import cz.mirun.app.Instruction.InsSet;
+
 /**
 * <p>Title: Main</p>
 *
@@ -38,8 +40,9 @@ static int PC = 0;
 static int BC_VariableCount = 0; // pocet promennych v bytecode
 
 static Map<String, Integer> variableMap = new HashMap<String, Integer>();
+static Map<String, Integer> functionJumps = new HashMap<String, Integer>();
 
-static List<String> compileOut = new ArrayList<String>();
+static List<String> innerFunctions = new ArrayList<String>();
 
 static List<Integer> intVarCodes = new ArrayList<Integer>();
 static List<Integer> stringVarCodes = new ArrayList<Integer>();
@@ -91,14 +94,39 @@ private static void compile(AST node)
 // expects AST token
 private static void compile(AST node, String context)
 {
+	// scan inner functions, to be able to differ between them and outer method calls 
 	String tokenName = node.getText();
 	
+	if (tokenName.equals("OBJBLOCK")) {
+		AST method = node.getFirstChild();
+		do {
+			String methodName = method.getFirstChild().getNextSibling().getNextSibling().getText();
+			innerFunctions.add(methodName);
+			method = method.getNextSibling();
+		} while (method != null);
+	}
+		
 	if (tokenName.equals("METHOD_DEF"))
 	{
-		BC_VariableCount = 0;	// resetujeme pocitadlo promennych, vstupujeme do lokalni promenne
+		//BC_VariableCount = 0;
+		String methodName = node.getFirstChild().getNextSibling().getNextSibling().getText();
+		byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNSTART, methodName, null, -1));
+		functionJumps.put(methodName, byteCode.size()-1);
 		compile_functionHeader(node);
 	}
 	
+}
+
+private static void replaceFunjumps() {
+	int count = 0;
+	for (Instruction ins : byteCode.getInstructions()) {
+		
+		if (ins.opcode.equals(InsSet.FUNJUMP) && (ins.operands.get(1).equals("null") || ins.operands.get(1).isEmpty())) {
+			String op = "" + functionJumps.get(ins.operands.get(0));
+			byteCode.changeOperand(count, 0, op);
+		}
+		count++;
+	}
 }
 
 // expects METHOD_DEF token
@@ -148,7 +176,7 @@ private static void compile_fuctionBody(AST node) {
 
 private static void compile_return_statement(AST node) {
 	compile_expression(node.getFirstChild());
-	// Nacez se do byte code da return
+	byteCode.addInstruction(new Instruction(InsSet.RETURN));
 }
 
 private static void compile_for_cycle(AST node) {
@@ -356,7 +384,8 @@ private static void compile_function_call(AST node) {
 	}
 	String params = "";
 	for (String str : parameters) params += variableMap.get(str) + " ";
-	byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNCALL, fName, params));
+	if (!innerFunctions.contains(fName)) byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNCALL, fName, params));
+	else byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNJUMP, fName, (params.equals("null") ? params : ""), functionJumps.get(fName)));
 
 }
 
@@ -470,7 +499,7 @@ private static void traverse (AST node, int depth)
     
     if (PC > 3) // oriznu prvni tri slova
 	{
-    	printNode(node, depth);
+    	//printNode(node, depth);
     	compile(node);
 	}
 	
@@ -513,7 +542,7 @@ private static void traverse (AST node, int depth)
          //System.out.println("Generating bytecode from the given source file...");
          
          traverse(parser.getAST(), 0);
-         
+         replaceFunjumps();
          byteCode.print();
          //exportByteCode(args[0]);
      } catch (IOException e) {
