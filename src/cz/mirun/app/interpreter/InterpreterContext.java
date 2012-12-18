@@ -77,6 +77,10 @@ public class InterpreterContext {
 	public Map<String, ValuePair> getVarPool() {
 		return varPool;
 	}
+	
+	public Map<String, Integer> getVarMappings() {
+		return varMappings;
+	}
 
 	public Stack<ValuePair> getStack() {
 		return stack;

@@ -356,14 +356,20 @@ private static void compile_assignment_expression(AST node) {
 		AST node_token_VARNAME = node.getFirstChild();
 		AST node_token_VARTYPE = node_token_VARNAME.getNextSibling().getFirstChild();
 		AST node_token_ARRLEN = node_token_VARTYPE.getNextSibling().getFirstChild();
-		try {
-			int arrLen = Integer.parseInt(node_token_ARRLEN.getText());
-			byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, variableMap.get(node_token_VARNAME.getText()) + " " + arrLen, node_token_VARTYPE.getText()));
-		} catch (NumberFormatException nfe) { // Pokusili jsme se vytvorit array o parametricke delce
-			String varName = node_token_ARRLEN.getText();
-			byteCode.addInstruction(new Instruction(Instruction.InsSet.LOAD_VAR, variableMap.get(varName) + ""));
-			byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, variableMap.get(node_token_VARNAME.getText()) + "", node_token_VARTYPE.getText()));
-		}		
+		if (node_token_VARTYPE.getText().equals("int_array") || node_token_VARTYPE.getText().equals("string_array")) {
+			try { // Prirazujeme do promenne nove pole
+				int arrLen = Integer.parseInt(node_token_ARRLEN.getText());
+				byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, variableMap.get(node_token_VARNAME.getText()) + " " + arrLen, node_token_VARTYPE.getText()));
+			} catch (NumberFormatException nfe) { // Pokusili jsme se vytvorit array o parametricke delce
+				String varName = node_token_ARRLEN.getText();
+				byteCode.addInstruction(new Instruction(Instruction.InsSet.LOAD_VAR, variableMap.get(varName) + ""));
+				byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, variableMap.get(node_token_VARNAME.getText()) + "", node_token_VARTYPE.getText()));
+			}	
+		} else { // Prirazujeme obsah polozky pole do nejake promenne
+			byteCode.addInstruction(new Instruction(Instruction.InsSet.LOAD_ARRAY, variableMap.get(node_token_VARTYPE.getText()) + "",
+					node_token_ARRLEN.getText()));
+			byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, variableMap.get(node_token_VARNAME.getText()) + "", node_token_VARNAME.getText() + " int"));
+		}
 	}	
 	else {
 		AST node_token_VARIABLE = node.getFirstChild();

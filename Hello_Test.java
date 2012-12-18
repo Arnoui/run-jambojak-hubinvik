@@ -1,24 +1,9 @@
-class Test4
+class Test
 {
-	
-	int main() {
-		int callRes = doIt();
-	}
-	
-	int doIt()
+	int main()
 	{
-		int a = 0;
-		if (a > 0) {
-			int b = 5;
-			int c = 6;
-			int result = b*c;
-			return result;
-		} else {
-			int d = 7;
-			int e = 8;
-			int result = d*e;
-			return result;
-		}
-		
+		int result = 0;
+		int c = 1+2*3+5;
+		result = c;
 	}
 }

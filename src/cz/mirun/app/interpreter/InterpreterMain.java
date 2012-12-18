@@ -49,8 +49,8 @@ public class InterpreterMain {
 		//System.out.println(returnResult.getFirst().toString() + " " + returnResult.getSecond().toString());
 	
 		//writeOutput(filename, returnResult);
-		
 		System.out.println(InterpreterContext.getInstance().getVarPool().get("0").getFirst());
+
 		InterpreterContext.getInstance().cleanContext();
 		}
 	
@@ -103,7 +103,7 @@ public class InterpreterMain {
 		String instr = lineParams[1]; // prvni je cislo radky
 		String instrParam;
 		String type;
-		System.out.println(instr);
+		//System.out.println(instr);
 		if (lineParams.length == 2) { // Jen jedna hodnota, coz je nazev instrukce bajtkodu bez dalsich hodnot
 			if (instr.equals("MULTIPLY") || instr.equals("PLUS") || instr.equals("MINUS")) 
 				InterpreterContext.getInstance().pushToStack(new ValuePair(MethodLookup.performArithmetic(instr), "int"));
@@ -140,8 +140,8 @@ public class InterpreterMain {
 		
 		else if (lineParams.length >= 4) { // Nazev instrukce, parametr a typ parametru
 			instrParam = lineParams[2];
-			type = lineParams[4];
 			if (instr.equals("STORE_VAR")) {
+				type = lineParams[4];
 				Object varVal = InterpreterContext.getInstance().popFromStack();
 				if (varVal instanceof ValuePair) InterpreterContext.getInstance().insertIntoVarPool(instrParam, (ValuePair) varVal);
 				else InterpreterContext.getInstance().insertIntoVarPool(instrParam, new ValuePair(varVal, type));
@@ -153,6 +153,18 @@ public class InterpreterMain {
 				ValuePair valPair = InterpreterContext.getInstance().popFromStack();
 				Integer index = Integer.parseInt(lineParams[3]);
 				ValuePairHelper.storeToArray(valPair, lineParams[2], index);
+			}
+			else if (instr.equals("LOAD_ARRAY")) {
+				Integer index = null;
+				try {
+					index = Integer.parseInt(lineParams[3]);
+				} catch (NumberFormatException nfe) {
+					String varName = lineParams[3];
+					String varIndex = InterpreterContext.getInstance().getFromVarMappings(varName).toString();
+					index = Integer.parseInt(InterpreterContext.getInstance().getFromVarPool(varIndex).getFirst().toString());
+				}
+				Object[] array = (Object[]) InterpreterContext.getInstance().getFromVarPool(lineParams[2]).getFirst();
+				InterpreterContext.getInstance().pushToStack(new ValuePair(array[index], ""));
 			}
 		}
 		
