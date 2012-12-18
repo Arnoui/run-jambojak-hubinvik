@@ -370,7 +370,7 @@ private static void compile_assignment_expression(AST node) {
 		AST node_token_VALUE = node_token_VARIABLE.getNextSibling();
 		compile_expression(node_token_VALUE);
 		String varType = getVarType(variableMap.get(node_token_VARIABLE.getText()));
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, variableMap.get(node_token_VARIABLE.getText()) + "", varType));
+		byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, variableMap.get(node_token_VARIABLE.getText()) + "", node_token_VARIABLE.getText() + " " + varType));
 	}
 }
 
@@ -391,7 +391,7 @@ private static void compile_function_call(AST node) {
 	String params = "";
 	for (String str : parameters) params += variableMap.get(str) + " ";
 	if (!innerFunctions.contains(fName)) byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNCALL, fName, params));
-	else byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNJUMP, fName, (params.equals("null") ? params : ""), functionJumps.get(fName)));
+	else byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNJUMP, fName, (params.equals("null") ? params : ""), null));
 
 }
 
@@ -489,7 +489,7 @@ private static void compile_variable_definition(AST node) {
 			compile_expression(node_token_ASSIGN.getFirstChild());
 			
 		}
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, BC_VariableCount + "", node_token_VARTYPE.getText()));
+		byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, BC_VariableCount + "", node_token_VARNAME.getText() + " " + node_token_VARTYPE.getText()));
 	} else { // ok, pracujeme s poli
 		AST node_token_ASSIGNCHECK = node_token_ASSIGN.getFirstChild().getFirstChild().getFirstChild();
 		if (node_token_VARTYPE.getText().equals(node_token_ASSIGNCHECK.getText())) { // deklarujeme nove pole
@@ -508,7 +508,7 @@ private static void compile_variable_definition(AST node) {
 			AST node_token_INDEX = node_token_ASSIGNCHECK.getNextSibling().getFirstChild();
 			byteCode.addInstruction(new Instruction(Instruction.InsSet.LOAD_ARRAY, variableMap.get(node_token_ASSIGNCHECK.getText()) + "",
 					node_token_INDEX.getText()));
-			byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, BC_VariableCount + "", node_token_VARTYPE.getText()));
+			byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, BC_VariableCount + "", node_token_VARNAME.getText() + " " +node_token_VARTYPE.getText()));
 		}
 	}
 	variableMap.put(node_token_VARNAME.getText(), BC_VariableCount);

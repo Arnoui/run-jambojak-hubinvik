@@ -50,7 +50,7 @@ public class InterpreterMain {
 	
 		//writeOutput(filename, returnResult);
 		
-		System.out.println(InterpreterContext.getInstance().getVarPool().get("4").getFirst());
+		System.out.println(InterpreterContext.getInstance().getVarPool().get("0").getFirst());
 		InterpreterContext.getInstance().cleanContext();
 		}
 	
@@ -138,13 +138,16 @@ public class InterpreterMain {
 			}
 		}
 		
-		else if (lineParams.length == 4) { // Nazev instrukce, parametr a typ parametru
+		else if (lineParams.length >= 4) { // Nazev instrukce, parametr a typ parametru
 			instrParam = lineParams[2];
-			type = lineParams[3];
+			type = lineParams[4];
 			if (instr.equals("STORE_VAR")) {
 				Object varVal = InterpreterContext.getInstance().popFromStack();
 				if (varVal instanceof ValuePair) InterpreterContext.getInstance().insertIntoVarPool(instrParam, (ValuePair) varVal);
 				else InterpreterContext.getInstance().insertIntoVarPool(instrParam, new ValuePair(varVal, type));
+				
+				InterpreterContext.getInstance().insertIntoVarMappings(lineParams[3], Integer.parseInt(instrParam));
+				
 			}
 			else if (instr.equals("STORE_ARRAY")) {
 				ValuePair valPair = InterpreterContext.getInstance().popFromStack();

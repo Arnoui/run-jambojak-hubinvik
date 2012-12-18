@@ -1,13 +1,24 @@
 class Test4
 {
-	int main()
+	
+	int main() {
+		int callRes = doIt();
+	}
+	
+	int doIt()
 	{
-		int c = 0;
-		for (int i = 0; i < 3; i = i + 1) {
-			c = c + i*2 + i*3; // 1st run 0; 2nd 5; 3rd 15
+		int a = 0;
+		if (a > 0) {
+			int b = 5;
+			int c = 6;
+			int result = b*c;
+			return result;
+		} else {
+			int d = 7;
+			int e = 8;
+			int result = d*e;
+			return result;
 		}
-		int b = 25;
-		int a = 24;
-		int result = b-a+c; // 25-24+15 = 16
+		
 	}
 }

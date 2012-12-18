@@ -16,6 +16,7 @@ public class InterpreterContext {
 	private static InterpreterContext instance;
 	
 	private Map<String, ValuePair> varPool;
+	private Map<String, Integer> varMappings;
 	private Stack<ValuePair> stack;
 	private Stack<Integer> returnStack;
 	
@@ -23,6 +24,7 @@ public class InterpreterContext {
 		varPool = new HashMap<String, ValuePair>();
 		stack = new Stack<ValuePair>();
 		returnStack = new Stack<Integer>();
+		varMappings = new HashMap<String, Integer>();
 	}
 	
 	public static InterpreterContext getInstance() {
@@ -52,6 +54,14 @@ public class InterpreterContext {
 	
 	public void insertIntoVarPool(String key, ValuePair val) {
 		this.varPool.put(key, val);
+	}
+	
+	public Integer getFromVarMappings(String key) {
+		return this.varMappings.get(key);
+	}
+	
+	public void insertIntoVarMappings(String key, Integer val) {
+		this.varMappings.put(key, val);
 	}
 	
 	@Override
