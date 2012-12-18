@@ -50,7 +50,7 @@ public class InterpreterMain {
 	
 		//writeOutput(filename, returnResult);
 		
-		System.out.println(InterpreterContext.getInstance().getVarPool().get("0").getFirst());
+		System.out.println(InterpreterContext.getInstance().getVarPool().get("4").getFirst());
 		InterpreterContext.getInstance().cleanContext();
 		}
 	

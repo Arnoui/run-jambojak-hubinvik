@@ -1,0 +1,5 @@
+Co znovu udelat :
+
+- Viceradkovy IF a FOR
+- Nacteni do pole
+- Nacteni z pole

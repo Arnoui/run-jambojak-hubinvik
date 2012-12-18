@@ -214,6 +214,12 @@ private static void compile_for_cycle(AST node) {
 	// L2: vykonani tela cyklu
 	compile_expression(token_FOR_BODY);								// "{"
 	
+	token_FOR_BODY = token_FOR_BODY.getFirstChild().getNextSibling();
+	while (token_FOR_BODY != null) {
+		compile_expression(token_FOR_BODY);
+		token_FOR_BODY = token_FOR_BODY.getNextSibling();
+	};
+	
 	// zavolani iteratoru
 	compile_expression(token_FOR_ITERATOR.getFirstChild().getFirstChild());	// EXPR
 	
@@ -406,12 +412,26 @@ private static void compile_if_condition(AST node) { // TODO : slozene zavorky p
 	// { ... } // if-part
 	compile_expression(node_token_IFEXPR); // compile if branch expression
 	
+	node_token_IFEXPR = node_token_IFEXPR.getFirstChild().getNextSibling();
+	while (node_token_IFEXPR != null) {
+		compile_expression(node_token_IFEXPR);
+		node_token_IFEXPR = node_token_IFEXPR.getNextSibling();
+	};
+	
 	byteCode.addInstruction(new Instruction(Instruction.InsSet.JUMP, "")); // L1
 	
 	int PC_jumpToL2 = byteCode.size() - 1; // position of JUMP to L2
 	
 	// else { ... } // else-part; compile only when present
-	if (node_token_ELSEEXPR != null) compile_expression(node_token_ELSEEXPR);
+	if (node_token_ELSEEXPR != null) {
+		compile_expression(node_token_ELSEEXPR);
+		node_token_ELSEEXPR = node_token_ELSEEXPR.getFirstChild().getNextSibling();
+		
+		while (node_token_ELSEEXPR != null) {
+			compile_expression(node_token_ELSEEXPR);
+			node_token_ELSEEXPR = node_token_ELSEEXPR.getNextSibling();
+		};
+	}
 	
 	byteCode.addInstruction(new Instruction(Instruction.InsSet.NOP, "")); // L2
 	
@@ -430,10 +450,14 @@ private static void compile_variable_definition(AST node) {
 	AST node_token_VARTYPE;
 	AST dummy = node.getFirstChild(); // MODIFIERS
 	AST node_token_TYPE = dummy.getNextSibling();
-	AST node_token_ARRBRACKET = node_token_TYPE.getNextSibling().getNextSibling().getFirstChild().
-			getFirstChild(); 
-	if (node_token_ARRBRACKET.getText().equals(Constants.LEFT_SQ_BR))
+	AST node_token_ARRBRACKET = null;
+	
+	if (node_token_TYPE.getNextSibling().getNextSibling() != null && node_token_TYPE.
+			getNextSibling().getNextSibling().getFirstChild().getFirstChild().getText().
+			equals(Constants.LEFT_SQ_BR)) {
 		isArray = true;
+		node_token_ARRBRACKET = node_token_TYPE.getNextSibling().getNextSibling().getFirstChild().getFirstChild();
+	}
 	node_token_VARTYPE = node_token_TYPE.getFirstChild();
 	
 	AST node_token_VARNAME = node_token_TYPE.getNextSibling();
@@ -443,8 +467,6 @@ private static void compile_variable_definition(AST node) {
 		// not an assignment, just declaring, can ignore
 		return;
 	}
-
-	AST node_token_ASSIGNCHECK = node_token_ASSIGN.getFirstChild().getFirstChild().getFirstChild();
 	
 	if (!isArray) {
 		AST node_token_VARVAL = node_token_ASSIGN.getFirstChild().getFirstChild();
@@ -469,6 +491,7 @@ private static void compile_variable_definition(AST node) {
 		}
 		byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, BC_VariableCount + "", node_token_VARTYPE.getText()));
 	} else { // ok, pracujeme s poli
+		AST node_token_ASSIGNCHECK = node_token_ASSIGN.getFirstChild().getFirstChild().getFirstChild();
 		if (node_token_VARTYPE.getText().equals(node_token_ASSIGNCHECK.getText())) { // deklarujeme nove pole
 			AST node_token_ARRLEN = node_token_ARRBRACKET.getFirstChild().getNextSibling().getFirstChild();
 			try {
