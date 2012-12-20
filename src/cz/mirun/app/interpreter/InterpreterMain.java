@@ -9,6 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 /**
@@ -49,8 +50,7 @@ public class InterpreterMain {
 		//System.out.println(returnResult.getFirst().toString() + " " + returnResult.getSecond().toString());
 	
 		//writeOutput(filename, returnResult);
-		System.out.println(InterpreterContext.getInstance().getVarPool().get("0").getFirst());
-
+		
 		InterpreterContext.getInstance().cleanContext();
 		}
 	
@@ -113,8 +113,9 @@ public class InterpreterMain {
 		}	
 		else if (lineParams.length >= 2 && instr.equals("FUNCALL")) { 
 			String funName = lineParams[2];
-			ValuePair [] params = new ValuePair[lineParams.length - 2];
-			for (int i = 3; i < lineParams.length; i++) params[i-3] = InterpreterContext.getInstance().popFromStack();
+			ValuePair [] params = new ValuePair[lineParams.length - 3];
+			for (int i = 3; i < lineParams.length; i++) params[i-3] = InterpreterContext.getInstance().getFromVarPool(lineParams[i]);
+			MethodLookup.callMethod(funName, params);
 		}
 		else if (lineParams.length >= 2 && instr.equals("NEW_ARRAY")) { 
 			createNewArray(lineParams);

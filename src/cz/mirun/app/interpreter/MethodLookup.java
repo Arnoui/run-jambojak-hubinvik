@@ -2,6 +2,7 @@ package cz.mirun.app.interpreter;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -38,7 +39,8 @@ public class MethodLookup {
 	}
 	
 	public static void callMethod(String methodName, ValuePair[] params) {
-		Method meth = lookupMethod(methodName, params);
+		Object[] pVals = extractParams(params);
+		lookupMethod(methodName, pVals);
 	}
 	
 	/**
@@ -48,20 +50,50 @@ public class MethodLookup {
 	 * @return
 	 */
 	
-	private static Method lookupMethod(String methodName, ValuePair[] params) {
+	private static void lookupMethod(String methodName, Object[] params) {
 		Method method = null;
-		return method;
+		try {
+			if (methodName.equals("print")) {
+				final PrintStream printClass = System.out; 
+				method = printClass.getClass().getMethod("println", String.class);
+				method.invoke(printClass, params[0].toString());
+			}
+		} catch (SecurityException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchMethodException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private static Object[] extractParams(ValuePair[] params) {
+		Object[] pVals = new Object[params.length];
+		for (int i = 0; i < params.length; i++) {
+			pVals[i] = params[i].getFirst();
+		}
+		return pVals;
 	}
 	
 	private static Class getRequestedClass(String className) {
 		Class clazz = null;
-		try {
+		/**try {
 			clazz = Class.forName(className);
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}		
-		return clazz;
+		}	**/	
+		return System.out.getClass();
 	}
 	
 }

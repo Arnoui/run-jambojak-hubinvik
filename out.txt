@@ -1,13 +1,4 @@
 0: FUNSTART main 
-1: PUSH_NUMBER 0 
-2: STORE_VAR 0 result int 
-3: PUSH_NUMBER 1 
-4: PUSH_NUMBER 2 
-5: PUSH_NUMBER 3 
-6: MULTIPLY
-7: PLUS
-8: PUSH_NUMBER 5 
-9: PLUS
-10: STORE_VAR 1 c int 
-11: LOAD_VAR 1 
-12: STORE_VAR 0 result int 
+1: PUSH_STRING Nazdaaar 
+2: STORE_VAR 0 a String 
+3: FUNCALL print 0  
