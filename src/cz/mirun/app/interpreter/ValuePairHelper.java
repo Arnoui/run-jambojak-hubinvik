@@ -30,6 +30,14 @@ public class ValuePairHelper {
 	public static void storeVar(Object var, String key, String type) {
 		InterpreterContext.getInstance().insertIntoVarPool(key, new ValuePair(var,type));
 	}
+
+	public static String getObjectType(Object returnObj) {
+		if (returnObj instanceof String) return "String";
+		else if (returnObj instanceof Integer) return "int";
+		else if (returnObj instanceof Integer[]) return "int_array";
+		else if (returnObj instanceof String[]) return "string_array";
+		else throw new UnsupportedOperationException("Neznamy typ promenne " + returnObj.getClass());
+	}
 	
 	
 }

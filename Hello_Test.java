@@ -6,7 +6,8 @@ class Test
 		//int result = recur(c);
 		//print(result);
 		String a = "Nazdaaar";
-		print(a);
+		String delim = "aaa";
+		string_array arr = split(a,delim);
 	}
 	/**
 	int recur(int c) {

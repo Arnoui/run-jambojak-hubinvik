@@ -47,8 +47,9 @@ public class InterpreterMain {
 		executeByteCode();
 	
 		//ValuePair returnResult = InterpreterContext.getInstance().popFromStack();
-		//System.out.println(returnResult.getFirst().toString() + " " + returnResult.getSecond().toString());
-	
+		String[] result = (String[]) InterpreterContext.getInstance().getFromVarPool("2").getFirst();
+		for (int i = 0; i < result.length; i++) System.out.println(result[i]);
+		
 		//writeOutput(filename, returnResult);
 		
 		InterpreterContext.getInstance().cleanContext();
@@ -101,73 +102,68 @@ public class InterpreterMain {
 	
 	private static void handleParams(String[] lineParams) {
 		String instr = lineParams[1]; // prvni je cislo radky
-		String instrParam;
 		String type;
 		//System.out.println(instr);
-		if (lineParams.length == 2) { // Jen jedna hodnota, coz je nazev instrukce bajtkodu bez dalsich hodnot
-			if (instr.equals("MULTIPLY") || instr.equals("PLUS") || instr.equals("MINUS")) 
-				InterpreterContext.getInstance().pushToStack(new ValuePair(MethodLookup.performArithmetic(instr), "int"));
-			else if (instr.equals("RETURN")) {
-				currPC = InterpreterContext.getInstance().popFromRetStack();
-			}
-		}	
-		else if (lineParams.length >= 2 && instr.equals("FUNCALL")) { 
+		if (instr.equals("MULTIPLY") || instr.equals("PLUS") || instr.equals("MINUS")) 
+			InterpreterContext.getInstance().pushToStack(new ValuePair(MethodLookup.performArithmetic(instr), "int"));
+		else if (instr.equals("RETURN")) {
+			currPC = InterpreterContext.getInstance().popFromRetStack();
+		}
+		else if (instr.equals("FUNCALL")) { 
 			String funName = lineParams[2];
 			ValuePair [] params = new ValuePair[lineParams.length - 3];
 			for (int i = 3; i < lineParams.length; i++) params[i-3] = InterpreterContext.getInstance().getFromVarPool(lineParams[i]);
 			MethodLookup.callMethod(funName, params);
 		}
-		else if (lineParams.length >= 2 && instr.equals("NEW_ARRAY")) { 
+		else if (instr.equals("NEW_ARRAY")) { 
 			createNewArray(lineParams);
 		}
-		else if (lineParams.length == 3) { // Dve hodnoty, nazev instrukce a parametr
-			instrParam = lineParams[2];
-			if (instr.equals("PUSH_NUMBER")) InterpreterContext.getInstance().pushToStack(new ValuePair(instrParam, "int"));
-			else if (instr.equals("PUSH_STRING")) InterpreterContext.getInstance().pushToStack(new ValuePair(instrParam, "String"));
-			else if (isLogicalCondition(instr)) {
-				handleLogicalCondition(instr, instrParam);
+		else if (instr.equals("PUSH_NUMBER")) InterpreterContext.getInstance().pushToStack(new ValuePair(lineParams[2], "int"));
+		else if (instr.equals("PUSH_STRING")) {
+			String param = lineParams[2];
+			if (lineParams.length > 3) { // Nutna uprava, protoze v textu samozrejme muzou byt mezery, coz interpret rozparsuje jako dalsi parametry
+				for (int i = 3; i < lineParams.length; i++) param+=" " + lineParams[i];
 			}
-			else if (instr.equals("JUMP")) currPC = Integer.parseInt(instrParam)-1; // gotta decrement because the PC is automatically incremented in executeByteCode for iteration
-			else if (instr.equals("FUNJUMP")) {
-				InterpreterContext.getInstance().pushToRetStack(currPC);
-				currPC = Integer.parseInt(instrParam);
+			InterpreterContext.getInstance().pushToStack(new ValuePair(param, "string"));
+		}
+		else if (isLogicalCondition(instr)) {
+			handleLogicalCondition(instr, lineParams[2]);
+		}
+		else if (instr.equals("JUMP")) currPC = Integer.parseInt(lineParams[2])-1; // gotta decrement because the PC is automatically incremented in executeByteCode for iteration
+		else if (instr.equals("FUNJUMP")) {
+			InterpreterContext.getInstance().pushToRetStack(currPC);
+			currPC = Integer.parseInt(lineParams[2]);
+		}
+		else if (instr.equals("NOP") || instr.equals("FUNSTART")) return;
+		else if (instr.equals("LOAD_VAR")) {
+			ValuePair varVal = InterpreterContext.getInstance().getFromVarPool(lineParams[2]);
+			InterpreterContext.getInstance().pushToStack(varVal);
+		}
+		else if (instr.equals("STORE_VAR")) {
+			type = lineParams[4];
+			Object varVal = InterpreterContext.getInstance().popFromStack();
+			if (varVal instanceof ValuePair) InterpreterContext.getInstance().insertIntoVarPool(lineParams[2], (ValuePair) varVal);
+			else InterpreterContext.getInstance().insertIntoVarPool(lineParams[2], new ValuePair(varVal, type));
+			InterpreterContext.getInstance().insertIntoVarMappings(lineParams[3], Integer.parseInt(lineParams[2]));	
+		}
+		else if (instr.equals("STORE_ARRAY")) {
+			ValuePair valPair = InterpreterContext.getInstance().popFromStack();
+			Integer index = Integer.parseInt(lineParams[3]);
+			ValuePairHelper.storeToArray(valPair, lineParams[2], index);
+		}
+		else if (instr.equals("LOAD_ARRAY")) {
+			Integer index = null;
+			try {
+				index = Integer.parseInt(lineParams[3]);
+			} catch (NumberFormatException nfe) {
+				String varName = lineParams[3];
+				String varIndex = InterpreterContext.getInstance().getFromVarMappings(varName).toString();
+				index = Integer.parseInt(InterpreterContext.getInstance().getFromVarPool(varIndex).getFirst().toString());
 			}
-			else if (instr.equals("NOP") || instr.equals("FUNSTART")) return;
-			else if (instr.equals("LOAD_VAR")) {
-				ValuePair varVal = InterpreterContext.getInstance().getFromVarPool(instrParam);
-				InterpreterContext.getInstance().pushToStack(varVal);
-			}
+			Object[] array = (Object[]) InterpreterContext.getInstance().getFromVarPool(lineParams[2]).getFirst();
+			InterpreterContext.getInstance().pushToStack(new ValuePair(array[index], ""));
 		}
 		
-		else if (lineParams.length >= 4) { // Nazev instrukce, parametr a typ parametru
-			instrParam = lineParams[2];
-			if (instr.equals("STORE_VAR")) {
-				type = lineParams[4];
-				Object varVal = InterpreterContext.getInstance().popFromStack();
-				if (varVal instanceof ValuePair) InterpreterContext.getInstance().insertIntoVarPool(instrParam, (ValuePair) varVal);
-				else InterpreterContext.getInstance().insertIntoVarPool(instrParam, new ValuePair(varVal, type));
-				
-				InterpreterContext.getInstance().insertIntoVarMappings(lineParams[3], Integer.parseInt(instrParam));
-				
-			}
-			else if (instr.equals("STORE_ARRAY")) {
-				ValuePair valPair = InterpreterContext.getInstance().popFromStack();
-				Integer index = Integer.parseInt(lineParams[3]);
-				ValuePairHelper.storeToArray(valPair, lineParams[2], index);
-			}
-			else if (instr.equals("LOAD_ARRAY")) {
-				Integer index = null;
-				try {
-					index = Integer.parseInt(lineParams[3]);
-				} catch (NumberFormatException nfe) {
-					String varName = lineParams[3];
-					String varIndex = InterpreterContext.getInstance().getFromVarMappings(varName).toString();
-					index = Integer.parseInt(InterpreterContext.getInstance().getFromVarPool(varIndex).getFirst().toString());
-				}
-				Object[] array = (Object[]) InterpreterContext.getInstance().getFromVarPool(lineParams[2]).getFirst();
-				InterpreterContext.getInstance().pushToStack(new ValuePair(array[index], ""));
-			}
-		}
 		
 	}
 	

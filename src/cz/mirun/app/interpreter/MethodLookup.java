@@ -52,11 +52,19 @@ public class MethodLookup {
 	
 	private static void lookupMethod(String methodName, Object[] params) {
 		Method method = null;
+		Object returnObj = null;
 		try {
 			if (methodName.equals("print")) {
 				final PrintStream printClass = System.out; 
-				method = printClass.getClass().getMethod("println", String.class);
-				method.invoke(printClass, params[0].toString());
+				method = printClass.getClass().getMethod("println", params[0].getClass());
+				returnObj = method.invoke(printClass, params[0]);
+				
+			}
+			else if (methodName.equals("split")) {
+				Object toSplit = params[0];
+				Object delim = params[1];
+				method = toSplit.getClass().getMethod("split", delim.getClass());
+				returnObj = method.invoke(toSplit, delim);
 			}
 		} catch (SecurityException e) {
 			// TODO Auto-generated catch block
@@ -74,7 +82,11 @@ public class MethodLookup {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+		//System.out.println(returnObj);
+		if (returnObj != null){
+			// Volani ma navratovou hodnotu, hodime ji na stack
+			InterpreterContext.getInstance().pushToStack(new ValuePair(returnObj, ValuePairHelper.getObjectType(returnObj)));
+		}
 	}
 	
 	private static Object[] extractParams(ValuePair[] params) {
@@ -85,15 +97,16 @@ public class MethodLookup {
 		return pVals;
 	}
 	
+	/**
 	private static Class getRequestedClass(String className) {
 		Class clazz = null;
-		/**try {
+		try {
 			clazz = Class.forName(className);
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}	**/	
+		}		
 		return System.out.getClass();
 	}
-	
+	**/
 }
