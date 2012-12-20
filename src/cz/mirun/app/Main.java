@@ -389,7 +389,11 @@ private static void compile_function_call(AST node) {
 		if (node_token_FUNPARAM != null) {
 			do {
 				String paramName = node_token_FUNPARAM.getFirstChild().getText();
-				parameters.add(paramName);
+				if (variableMap.containsKey(paramName)) {
+					parameters.add(paramName);
+				} else {
+					compile_expression(node_token_FUNPARAM);
+				}
 				node_token_FUNPARAM = node_token_FUNPARAM.getNextSibling();
 			} while (node_token_FUNPARAM != null);
 		}

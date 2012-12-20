@@ -55,12 +55,13 @@ public class MethodLookup {
 		Object returnObj = null;
 		try {
 			if (methodName.equals("print")) {
+				params = evalParams(params, 1);
 				final PrintStream printClass = System.out; 
-				method = printClass.getClass().getMethod("println", params[0].getClass());
-				returnObj = method.invoke(printClass, params[0]);
-				
+				method = printClass.getClass().getMethod("println", params[0].toString().getClass());
+				returnObj = method.invoke(printClass, params[0].toString());
 			}
 			else if (methodName.equals("split")) {
+				params = evalParams(params, 2);
 				Object toSplit = params[0];
 				Object delim = params[1];
 				method = toSplit.getClass().getMethod("split", delim.getClass());
@@ -89,6 +90,20 @@ public class MethodLookup {
 		}
 	}
 	
+	private static Object[] evalParams(Object[] params, int paramsNeeded) {
+		Object[] newParams = new Object[paramsNeeded];
+		int check = paramsNeeded;
+		for (int i = 0; i < params.length; i++) {
+			if (params[i] == null) newParams[i] = InterpreterContext.getInstance().popFromStack().getFirst(); // Chybi nam nutny parametr, tak ho vezmeme ze stacku
+			else newParams[i] = params[i];
+			check--;
+		}
+		if (check > 0) {
+			for (int i = params.length; i < paramsNeeded; i++) newParams[i] = InterpreterContext.getInstance().popFromStack().getFirst(); // Chybi nam nutny parametr, tak ho vezmeme ze stacku
+		}
+		return newParams;
+	}
+
 	private static Object[] extractParams(ValuePair[] params) {
 		Object[] pVals = new Object[params.length];
 		for (int i = 0; i < params.length; i++) {

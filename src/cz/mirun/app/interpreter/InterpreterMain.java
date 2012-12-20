@@ -43,17 +43,20 @@ public class InterpreterMain {
 		scanInstructions(br);
 		
 		in.close();
-		
-		executeByteCode();
-	
+		try {
+			executeByteCode();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new Error("Severe error while interpreting bytecode! Possibly invalid bytecode structure? \nOriginal stack trace above");
+		}
 		//ValuePair returnResult = InterpreterContext.getInstance().popFromStack();
-		String[] result = (String[]) InterpreterContext.getInstance().getFromVarPool("2").getFirst();
-		for (int i = 0; i < result.length; i++) System.out.println(result[i]);
+		//String[] result = (String[]) InterpreterContext.getInstance().getFromVarPool("2").getFirst();
+		//for (int i = 0; i < result.length; i++) System.out.println(result[i]);
 		
 		//writeOutput(filename, returnResult);
 		
 		InterpreterContext.getInstance().cleanContext();
-		}
+	}
 	
 	 private static void writeOutput(String filename, ValuePair result) throws IOException {
 		 BufferedWriter out = new BufferedWriter(new FileWriter(filename +".out"));
