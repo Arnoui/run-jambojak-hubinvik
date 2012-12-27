@@ -70,8 +70,10 @@ public class InterpreterContext {
 	}
 
 	public void cleanContext() {
-		stack.clear();
 		varPool.clear();
+		varMappings.clear();
+		returnStack.clear();
+		stack.clear();
 	}
 
 	public Map<String, ValuePair> getVarPool() {

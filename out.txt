@@ -1,11 +1,8 @@
 0: FUNSTART main 
-1: PUSH_STRING Nazdaaar 
-2: STORE_VAR 0 a String 
-3: PUSH_STRING aaa 
-4: STORE_VAR 1 delim String 
-5: FUNCALL split 0 1  
-6: STORE_VAR 2 arr string_array 
-7: PUSH_NUMBER 1 
-8: PUSH_NUMBER 2 
-9: PLUS
-10: FUNCALL print 
+1: PUSH_NUMBER 1 
+2: STORE_VAR 0 i int 
+3: LOAD_VAR 0 
+4: FUNCALL check 
+5: FUNSTART check int i  
+6: LOAD_VAR 0 
+7: FUNCALL print 

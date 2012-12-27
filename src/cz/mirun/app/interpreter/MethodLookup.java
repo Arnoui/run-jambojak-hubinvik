@@ -6,6 +6,9 @@ import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import cz.mirun.app.interpreter.frames.MethodFrame;
+import cz.mirun.app.interpreter.frames.MethodFrameFactory;
+
 /**
  * Class for calling methods, depending on their types and/or reflection method name searches
  * 
@@ -39,8 +42,12 @@ public class MethodLookup {
 	}
 	
 	public static void callMethod(String methodName, ValuePair[] params) {
-		Object[] pVals = extractParams(params);
-		lookupMethod(methodName, pVals);
+		MethodFrame method = MethodFrameFactory.getInstance().getNewFrame(methodName);
+		if (method != null ) method.execute();
+		else {
+			Object[] pVals = extractParams(params);
+			lookupMethod(methodName, pVals);
+		}		
 	}
 	
 	/**

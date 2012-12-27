@@ -5,6 +5,8 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+import cz.mirun.app.Instruction.InsSet;
+
 public class ByteCode {
 	
 	public List<Instruction> instructions;
@@ -12,6 +14,11 @@ public class ByteCode {
 	public ByteCode()
 	{
 		instructions = new ArrayList<Instruction>();
+	}
+	
+	public ByteCode(List<Instruction> instructions)
+	{
+		this.instructions = instructions;
 	}
 	
 	public void addInstruction(Instruction ins)
@@ -74,6 +81,27 @@ public class ByteCode {
 		return instructions;
 	}
 
+	public static Instruction getInstructionFromString(String str) {
+		String[] line = str.split(" ");
+		//System.out.println("Strline " + str);
+		String params = "";
+		for (int i = 2; i < line.length; i++) params += line[i] + "";
+		Instruction ins = new Instruction(Instruction.InsSet.valueOf(line[1]), params);
+		return ins;
+	}
 	
+	public String insToString(Instruction ins) {
+		String out = this.getInstructions().indexOf(ins) + ": " + ins.opcode + " ";
+		for (String op : ins.operands)
+		{
+			if (!op.isEmpty()) out = out.concat(op + " ");
+		}
+		out += ins.label == -1 ? "" : ins.label;
+		return out;
+	}
+	
+	public ByteCode clone() {
+		return new ByteCode(this.instructions);
+	}
 	
 }

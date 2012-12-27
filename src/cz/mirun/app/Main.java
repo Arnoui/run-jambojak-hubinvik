@@ -108,13 +108,27 @@ private static void compile(AST node, String context)
 		
 	if (tokenName.equals("METHOD_DEF"))
 	{
-		//BC_VariableCount = 0;
+		BC_VariableCount = 0;
 		String methodName = node.getFirstChild().getNextSibling().getNextSibling().getText();
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNSTART, methodName, null, -1));
+		String params = getMethodParams(node);
+		byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNSTART, methodName, params, -1));
 		functionJumps.put(methodName, byteCode.size()-1);
 		compile_functionHeader(node);
 	}
 	
+}
+
+private static String getMethodParams(AST node) {
+	String params = "";
+	AST parameters = node.getFirstChild().getNextSibling().getNextSibling().getNextSibling();
+	AST param = parameters.getFirstChild();
+	while (param != null) {
+		String type = param.getFirstChild().getNextSibling().getFirstChild().getText();
+		String paramName = param.getFirstChild().getNextSibling().getNextSibling().getText();
+		params += type + " " + paramName + " ";
+		param = param.getNextSibling();
+	}
+	return params;
 }
 
 private static void replaceFunjumps() {
@@ -388,20 +402,16 @@ private static void compile_function_call(AST node) {
 		AST node_token_FUNPARAM = dummy.getFirstChild();
 		if (node_token_FUNPARAM != null) {
 			do {
-				String paramName = node_token_FUNPARAM.getFirstChild().getText();
-				if (variableMap.containsKey(paramName)) {
-					parameters.add(paramName);
-				} else {
-					compile_expression(node_token_FUNPARAM);
-				}
+				//String paramName = node_token_FUNPARAM.getFirstChild().getText();
+				compile_expression(node_token_FUNPARAM);
 				node_token_FUNPARAM = node_token_FUNPARAM.getNextSibling();
 			} while (node_token_FUNPARAM != null);
 		}
 	}
 	String params = "";
 	for (String str : parameters) params += variableMap.get(str) + " ";
-	if (!innerFunctions.contains(fName)) byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNCALL, fName, params));
-	else byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNJUMP, fName, (params.equals("null") ? params : ""), null));
+	byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNCALL, fName, params));
+	
 
 }
 
