@@ -13,6 +13,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 import cz.mirun.app.ByteCode;
+import cz.mirun.app.Instruction;
 import cz.mirun.app.interpreter.frames.MethodFrame;
 import cz.mirun.app.interpreter.frames.MethodFrameFactory;
 
@@ -74,6 +75,7 @@ public class InterpreterMain {
 	 }
 	
 	private static void scanInstructions(BufferedReader br) throws IOException {
+		instructions.addInstruction(new Instruction(Instruction.InsSet.NOP));
 		String strLine, methodHeader = null;
 		while ((strLine = br.readLine()) != null)   {
 			if (strLine.split(" ")[1].equals("FUNSTART")) {

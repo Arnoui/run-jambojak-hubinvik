@@ -21,14 +21,14 @@ public class MethodFrameFactory {
 	
 	public void addNewPrototype(ByteCode bCode, String header, String mName) {
 		knownMethodPrototypes.put(mName, new MethodFrame(bCode, header));
-		//System.out.println(bCode.getInstructions().size());
+		System.out.println(bCode.getInstructions().size());
 	}
 	
 	public MethodFrame getNewFrame(String methodName) {
 		MethodFrame prototype = knownMethodPrototypes.get(methodName);
 		if (prototype == null) return null;
 		MethodFrame toReturn = prototype.clone();
-		//System.out.println("Getting method " + methodName);
+		System.out.println("Getting method " + methodName);
 		return toReturn;
 	}
 	

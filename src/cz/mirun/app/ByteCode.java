@@ -85,7 +85,7 @@ public class ByteCode {
 		String[] line = str.split(" ");
 		//System.out.println("Strline " + str);
 		String params = "";
-		for (int i = 2; i < line.length; i++) params += line[i] + "";
+		for (int i = 2; i < line.length; i++) params += line[i] + " ";
 		Instruction ins = new Instruction(Instruction.InsSet.valueOf(line[1]), params);
 		return ins;
 	}

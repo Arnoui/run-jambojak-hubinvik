@@ -18,11 +18,11 @@ public class BytecodeExecutor {
 		else if (instr.equals("FUNCALL")) { 
 			String funName = lineParams[2];
 			ValuePair [] params = new ValuePair[lineParams.length - 3];
-			for (int i = 3; i < lineParams.length; i++) params[i-3] = InterpreterContext.getInstance().getFromVarPool(lineParams[i]);
+			for (int i = 3; i < lineParams.length; i++) params[i-3] = context.getFromVarPool(lineParams[i]);
 			MethodLookup.callMethod(funName, params);
 		}
 		else if (instr.equals("NEW_ARRAY")) { 
-			createNewArray(lineParams);
+			createNewArray(lineParams, context);
 		}
 		else if (instr.equals("PUSH_NUMBER")) InterpreterContext.getInstance().pushToStack(new ValuePair(lineParams[2], "int"));
 		else if (instr.equals("PUSH_STRING")) {
@@ -42,20 +42,20 @@ public class BytecodeExecutor {
 		}
 		else if (instr.equals("NOP") || instr.equals("FUNSTART")) return;
 		else if (instr.equals("LOAD_VAR")) {
-			ValuePair varVal = InterpreterContext.getInstance().getFromVarPool(lineParams[2]);
+			ValuePair varVal = context.getFromVarPool(lineParams[2]);
 			InterpreterContext.getInstance().pushToStack(varVal);
 		}
 		else if (instr.equals("STORE_VAR")) {
 			type = lineParams[4];
 			Object varVal = InterpreterContext.getInstance().popFromStack();
-			if (varVal instanceof ValuePair) InterpreterContext.getInstance().insertIntoVarPool(lineParams[2], (ValuePair) varVal);
-			else InterpreterContext.getInstance().insertIntoVarPool(lineParams[2], new ValuePair(varVal, type));
+			if (varVal instanceof ValuePair) context.insertIntoVarPool(lineParams[2], (ValuePair) varVal);
+			else context.insertIntoVarPool(lineParams[2], new ValuePair(varVal, type));
 			InterpreterContext.getInstance().insertIntoVarMappings(lineParams[3], Integer.parseInt(lineParams[2]));	
 		}
 		else if (instr.equals("STORE_ARRAY")) {
 			ValuePair valPair = InterpreterContext.getInstance().popFromStack();
 			Integer index = Integer.parseInt(lineParams[3]);
-			ValuePairHelper.storeToArray(valPair, lineParams[2], index);
+			ValuePairHelper.storeToArray(valPair, lineParams[2], index, context);
 		}
 		else if (instr.equals("LOAD_ARRAY")) {
 			Integer index = null;
@@ -64,16 +64,16 @@ public class BytecodeExecutor {
 			} catch (NumberFormatException nfe) {
 				String varName = lineParams[3];
 				String varIndex = InterpreterContext.getInstance().getFromVarMappings(varName).toString();
-				index = Integer.parseInt(InterpreterContext.getInstance().getFromVarPool(varIndex).getFirst().toString());
+				index = Integer.parseInt(context.getFromVarPool(varIndex).getFirst().toString());
 			}
-			Object[] array = (Object[]) InterpreterContext.getInstance().getFromVarPool(lineParams[2]).getFirst();
+			Object[] array = (Object[]) context.getFromVarPool(lineParams[2]).getFirst();
 			InterpreterContext.getInstance().pushToStack(new ValuePair(array[index], ""));
 		}
 		
 		
 	}
 	
-	private static void createNewArray(String[] lineParams) {
+	private static void createNewArray(String[] lineParams, MethodFrame context) {
 		String instrParam = lineParams[2];
 		String arrType = lineParams[3];
 		if (lineParams.length == 4) {
@@ -81,11 +81,11 @@ public class BytecodeExecutor {
 			Integer arrLen;
 			if (valPair.getFirst() instanceof String) arrLen = Integer.parseInt(valPair.getFirst().toString());
 			else arrLen = (Integer) valPair.getFirst();
-			InterpreterContext.getInstance().insertIntoVarPool(instrParam, new ValuePair(new Integer[arrLen], arrType));
+			context.insertIntoVarPool(instrParam, new ValuePair(new Integer[arrLen], arrType));
 		} else {
 			Integer arrLen = Integer.parseInt(lineParams[3]);
 			arrType = lineParams[4];
-			InterpreterContext.getInstance().insertIntoVarPool(instrParam, new ValuePair(new Integer[arrLen], arrType));
+			context.insertIntoVarPool(instrParam, new ValuePair(new Integer[arrLen], arrType));
 		}
 		
 	}

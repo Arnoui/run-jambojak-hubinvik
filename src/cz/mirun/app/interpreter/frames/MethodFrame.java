@@ -19,7 +19,7 @@ public class MethodFrame implements Cloneable {
 		this.byteCode = byteCode;
 		this.methodHeader = header;
 		init();
-		//System.out.println("Initialized " + byteCode.getInstructions().size());
+		System.out.println("Initialized " + byteCode.getInstructions().size());
 	}
 	
 	public void init() {
@@ -37,9 +37,8 @@ public class MethodFrame implements Cloneable {
 	}
 	
 	public void execute() {
-		//System.out.println("Executing, curr PC : " + currPC + ", maxPC is :" + maxPC);
-		
 		for (; currPC < maxPC; currPC++) {
+			System.out.println("Executing, curr PC : " + currPC + ", maxPC is :" + maxPC);
 			BytecodeExecutor.executeInstruction(byteCode.insToString(byteCode.getInstruction(currPC)), this);
 		}
 	}
@@ -78,8 +77,16 @@ public class MethodFrame implements Cloneable {
 	
 	@Override
 	public MethodFrame clone() {
-		//System.out.println("Cloning.. " + this.byteCode.getInstructions().size());
-		return new MethodFrame(this.byteCode, this.methodHeader);		
+		System.out.println("Cloning.. " + this.byteCode.getInstructions().size());
+		return new MethodFrame(this.byteCode.clone(), this.methodHeader);		
+	}
+	
+	public ValuePair getFromVarPool(String key) {
+		return this.localVarPool.get(key);
+	}
+	
+	public void insertIntoVarPool(String key, ValuePair value) {
+		this.localVarPool.put(key, value);
 	}
 	
 }
