@@ -21,18 +21,6 @@ import java.util.Map;
 
 import cz.mirun.app.Instruction.InsSet;
 
-/**
-* <p>Title: Main</p>
-*
-* <p>Description: Takes a Java source code file as an argument, parses it,
-* displays it content in a tree, and determines its imports and relationships
-* with other classes.</p>
-*
-* <p>Copyright: Copyright (c) 2007</p>
-*
-* @author John Valentino II
-* @version 1.0
-*/
 public class Main implements JavaTokenTypes {
 	
 static int PC = 0;
