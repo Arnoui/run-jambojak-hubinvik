@@ -1,6 +1,8 @@
 package cz.mirun.app.interpreter.frames;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import cz.mirun.app.ByteCode;
@@ -28,8 +30,14 @@ public class MethodFrameFactory {
 		MethodFrame prototype = knownMethodPrototypes.get(methodName);
 		if (prototype == null) return null;
 		MethodFrame toReturn = prototype.clone();
-		System.out.println("Getting method " + methodName);
+		//System.out.println("Getting method " + methodName);
 		return toReturn;
+	}
+	
+	public List<String> getKnownPrototypeNames() {
+		List<String> names = new LinkedList<String>();
+		for (String name : knownMethodPrototypes.keySet()) names.add(name);
+		return names;
 	}
 	
 }

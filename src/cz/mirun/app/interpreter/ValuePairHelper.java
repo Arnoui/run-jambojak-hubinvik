@@ -15,7 +15,7 @@ public class ValuePairHelper {
 		ValuePair var = context.getFromVarPool(key);
 		Object[] array = (Object[]) var.getFirst();
 		Object toStore = value.getFirst();
-		if (value.getSecond().equals("int")) toStore = Integer.parseInt(toStore.toString());
+		if (array instanceof Integer[]) toStore = Integer.parseInt(toStore.toString());
 		array[index] = toStore;
 	}
 	

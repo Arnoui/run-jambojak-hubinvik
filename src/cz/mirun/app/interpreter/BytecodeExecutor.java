@@ -5,7 +5,7 @@ import cz.mirun.app.interpreter.frames.MethodFrame;
 public class BytecodeExecutor {
 
 	public static void executeInstruction(String instruction, MethodFrame context) {
-		System.out.println(instruction);
+		//System.out.println(instruction);
 		String[] lineParams = instruction.split(" ");
 		String instr = lineParams[1]; // prvni je cislo radky
 		String type;
@@ -13,12 +13,13 @@ public class BytecodeExecutor {
 		if (instr.equals("MULTIPLY") || instr.equals("PLUS") || instr.equals("MINUS")) 
 			InterpreterContext.getInstance().pushToStack(new ValuePair(MethodLookup.performArithmetic(instr), "int"));
 		else if (instr.equals("RETURN")) {
-			context.setCurrPC(InterpreterContext.getInstance().popFromRetStack());
+			return;//context.setCurrPC(InterpreterContext.getInstance().popFromRetStack());
 		}
 		else if (instr.equals("FUNCALL")) { 
 			String funName = lineParams[2];
 			ValuePair [] params = new ValuePair[lineParams.length - 3];
 			for (int i = 3; i < lineParams.length; i++) params[i-3] = context.getFromVarPool(lineParams[i]);
+			//InterpreterContext.getInstance().pushToRetStack(context.getCurrPC());
 			MethodLookup.callMethod(funName, params);
 		}
 		else if (instr.equals("NEW_ARRAY")) { 
@@ -27,6 +28,7 @@ public class BytecodeExecutor {
 		else if (instr.equals("PUSH_NUMBER")) InterpreterContext.getInstance().pushToStack(new ValuePair(lineParams[2], "int"));
 		else if (instr.equals("PUSH_STRING")) {
 			String param = lineParams[2];
+			if (param.equals("~")) param = " ";// Znacka pro mezeru
 			if (lineParams.length > 3) { // Nutna uprava, protoze v textu samozrejme muzou byt mezery, coz interpret rozparsuje jako dalsi parametry
 				for (int i = 3; i < lineParams.length; i++) param+=" " + lineParams[i];
 			}
@@ -44,17 +46,26 @@ public class BytecodeExecutor {
 		else if (instr.equals("LOAD_VAR")) {
 			ValuePair varVal = context.getFromVarPool(lineParams[2]);
 			InterpreterContext.getInstance().pushToStack(varVal);
+			//System.out.println("Loading " + varVal + " from " + lineParams[2]);
 		}
 		else if (instr.equals("STORE_VAR")) {
 			type = lineParams[4];
 			Object varVal = InterpreterContext.getInstance().popFromStack();
 			if (varVal instanceof ValuePair) context.insertIntoVarPool(lineParams[2], (ValuePair) varVal);
 			else context.insertIntoVarPool(lineParams[2], new ValuePair(varVal, type));
+			//System.out.println("Storing " + varVal + " to " + lineParams[2]);
 			InterpreterContext.getInstance().insertIntoVarMappings(lineParams[3], Integer.parseInt(lineParams[2]));	
 		}
 		else if (instr.equals("STORE_ARRAY")) {
 			ValuePair valPair = InterpreterContext.getInstance().popFromStack();
-			Integer index = Integer.parseInt(lineParams[3]);
+			Integer index = null;
+			try {
+				index = Integer.parseInt(lineParams[3]);
+			} catch (NumberFormatException nfe) {
+				String varName = lineParams[3];
+				String varIndex = InterpreterContext.getInstance().getFromVarMappings(varName).toString();
+				index = Integer.parseInt(context.getFromVarPool(varIndex).getFirst().toString());
+			}
 			ValuePairHelper.storeToArray(valPair, lineParams[2], index, context);
 		}
 		else if (instr.equals("LOAD_ARRAY")) {

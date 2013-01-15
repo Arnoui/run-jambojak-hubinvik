@@ -35,7 +35,7 @@ static List<String> innerFunctions = new ArrayList<String>();
 static List<Integer> intVarCodes = new ArrayList<Integer>();
 static List<Integer> stringVarCodes = new ArrayList<Integer>();
 
-static ByteCode byteCode = new ByteCode();
+static List<ByteCode> byteCodes = new LinkedList<ByteCode>();
 
 private static List<AST> getAstChildren(AST node)
 {
@@ -97,35 +97,51 @@ private static void compile(AST node, String context)
 	if (tokenName.equals("METHOD_DEF"))
 	{
 		BC_VariableCount = 0;
+		byteCodes.add(new ByteCode());
 		String methodName = node.getFirstChild().getNextSibling().getNextSibling().getText();
-		String params = getMethodParams(node);
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNSTART, methodName, params, -1));
-		functionJumps.put(methodName, byteCode.size()-1);
+		List<String> params = getMethodParams(node);
+		String paramsStr = "";
+		for (int i = params.size()-1; i >= 0; i--) {
+			String param = params.get(i);
+			paramsStr += param;
+		}
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.FUNSTART, methodName, paramsStr, -1));
+		for (int i = params.size()-1; i >= 0; i--) {
+			String param = params.get(i);
+			String[] typeAndName = param.split(" ");
+			String type = typeAndName[0];
+			String name = typeAndName[1];
+			byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, "" + BC_VariableCount, name + " " + type, -1));
+			variableMap.put(name, BC_VariableCount);
+			BC_VariableCount++;	
+		}
+		functionJumps.put(methodName, byteCodes.get(byteCodes.size()-1).size()-1);
 		compile_functionHeader(node);
 	}
 	
 }
 
-private static String getMethodParams(AST node) {
-	String params = "";
+private static List<String> getMethodParams(AST node) {
+	List<String> params = new LinkedList<String>();
 	AST parameters = node.getFirstChild().getNextSibling().getNextSibling().getNextSibling();
 	AST param = parameters.getFirstChild();
 	while (param != null) {
 		String type = param.getFirstChild().getNextSibling().getFirstChild().getText();
 		String paramName = param.getFirstChild().getNextSibling().getNextSibling().getText();
-		params += type + " " + paramName + " ";
+		params.add(type + " " + paramName + " ");
 		param = param.getNextSibling();
+	
 	}
 	return params;
 }
 
 private static void replaceFunjumps() {
 	int count = 0;
-	for (Instruction ins : byteCode.getInstructions()) {
+	for (Instruction ins : byteCodes.get(byteCodes.size()-1).getInstructions()) {
 		
 		if (ins.opcode.equals(InsSet.FUNJUMP) && (ins.operands.get(1).equals("null") || ins.operands.get(1).isEmpty())) {
 			String op = "" + functionJumps.get(ins.operands.get(0));
-			byteCode.changeOperand(count, 0, op);
+			byteCodes.get(byteCodes.size()-1).changeOperand(count, 0, op);
 		}
 		count++;
 	}
@@ -178,7 +194,7 @@ private static void compile_fuctionBody(AST node) {
 
 private static void compile_return_statement(AST node) {
 	compile_expression(node.getFirstChild());
-	byteCode.addInstruction(new Instruction(InsSet.RETURN));
+	byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(InsSet.RETURN));
 }
 
 private static void compile_for_cycle(AST node) {
@@ -209,9 +225,9 @@ private static void compile_for_cycle(AST node) {
 	compile_variable_definition(token_FOR_INIT.getFirstChild());	// VARIABLE_DEF
 	
 	// Jump na L1 (nacteni promennych + podminka)
-	byteCode.addInstruction(new Instruction(Instruction.InsSet.JUMP, ""));
+	byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.JUMP, ""));
 	
-	int PC_jumpToL1 = byteCode.size() - 1;
+	int PC_jumpToL1 = byteCodes.get(byteCodes.size()-1).size() - 1;
 	
 	// L2: vykonani tela cyklu
 	compile_expression(token_FOR_BODY);								// "{"
@@ -228,17 +244,17 @@ private static void compile_for_cycle(AST node) {
 	// L1: podminka, pokud je splnena, skocime na L2 (telo cyklu)
 	compile_expression(token_FOR_CONDITION.getFirstChild());		// EXPR
 	
-	int PC_L1 = byteCode.size() - 1; // L1
+	int PC_L1 = byteCodes.get(byteCodes.size()-1).size() - 1; // L1
 	
-	byteCode.changeOperand(PC_jumpToL1, 0, PC_L1 - 2 + ""); // "-2", protoze potrebujeme jeste nacist promenne pro skok
+	byteCodes.get(byteCodes.size()-1).changeOperand(PC_jumpToL1, 0, PC_L1 - 2 + ""); // "-2", protoze potrebujeme jeste nacist promenne pro skok
 	
 	// OLD: if true, pokracuju dolu (tj. skocim na L1); if false, preskocim (tj. PC + 2)
 	// skok na L1
-	byteCode.changeOperand(PC_L1, 0, (PC_jumpToL1 + 1) + "");
-	byteCode.getInstruction(PC_L1).setOpcode(byteCode.getInstruction(PC_L1).getInvertedForInstruction());
+	byteCodes.get(byteCodes.size()-1).changeOperand(PC_L1, 0, (PC_jumpToL1 + 1) + "");
+	byteCodes.get(byteCodes.size()-1).getInstruction(PC_L1).setOpcode(byteCodes.get(byteCodes.size()-1).getInstruction(PC_L1).getInvertedForInstruction());
 	
 	// skok na L1
-	// byteCode.addInstruction(new Instruction(Instruction.InsSet.JUMP, (PC_jumpToL1 + 1) + ""));
+	// byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.JUMP, (PC_jumpToL1 + 1) + ""));
 	
 }
 
@@ -279,16 +295,16 @@ private static void compile_expression(AST node) {
 	}
 	else if (isNumeric(tokenName))
 	{
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.PUSH_NUMBER, tokenName));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.PUSH_NUMBER, tokenName));
 	}
 	else if (isString(tokenName))
 	{
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.PUSH_STRING, tokenName));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.PUSH_STRING, tokenName));
 	}
 	else
 		// je to literal
 	{
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.LOAD_VAR, variableMap.get(tokenName) + ""));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.LOAD_VAR, variableMap.get(tokenName) + ""));
 	}
 }
 
@@ -302,19 +318,19 @@ private static void compile_logic_expression(AST node) {
 	
 	if (node.getText().equals(Constants.LOGIC_GT)) { // >
 		// if-less-than--then-jump-to
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.IF_LTE_JUMP, ""));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.IF_LTE_JUMP, ""));
 	}
 	else if (node.getText().equals(Constants.LOGIC_LT)) { // <
 		// if-greater-than--then-jump-to
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.IF_GTE_JUMP, ""));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.IF_GTE_JUMP, ""));
 	}
 	else if (node.getText().equals(Constants.LOGIC_EQ)) { // == 
 		// if-not-equal--then-jump-to
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.IF_NEQ_JUMP, ""));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.IF_NEQ_JUMP, ""));
 	}
 	else if (node.getText().equals(Constants.LOGIC_NEQ)) { // !=
 		// if-equal--then-jump-to
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.IF_EQ_JUMP, ""));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.IF_EQ_JUMP, ""));
 	}
 }
 
@@ -324,25 +340,25 @@ private static void compile_arithmetic_expression(AST node) {
 	
 	if (isNumeric(node_token_LEFT.getText())) {
 		// levy argument je konstanta, dame ji rovnou na stack
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.PUSH_NUMBER, node_token_LEFT.getText()));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.PUSH_NUMBER, node_token_LEFT.getText()));
 	} else {
 		// levy argument je promenna, vytahneme ji z variable map
 		compile_expression(node_token_LEFT);
 	}
 	if (isNumeric(node_token_RIGHT.getText())) {
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.PUSH_NUMBER, node_token_RIGHT.getText()));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.PUSH_NUMBER, node_token_RIGHT.getText()));
 	} else {
 		compile_expression(node_token_RIGHT);
 	}
 	
 	if (node.getText().equals(Constants.PLUS)) { // +
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.PLUS));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.PLUS));
 	}
 	else if (node.getText().equals(Constants.MINUS)) { // -
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.MINUS));	
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.MINUS));	
 	}
 	else if (node.getText().equals(Constants.MULTI)) { // * 
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.MULTIPLY));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.MULTIPLY));
 	}
 }
 
@@ -353,7 +369,7 @@ private static void compile_assignment_expression(AST node) {
 		AST node_token_INDEX = node_token_VARIABLE.getNextSibling().getFirstChild();
 		AST node_token_VALUE = node.getFirstChild().getNextSibling();
 		compile_expression(node_token_VALUE);
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_ARRAY, variableMap.get(node_token_VARIABLE.getText()) + "", node_token_INDEX.getText()));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.STORE_ARRAY, variableMap.get(node_token_VARIABLE.getText()) + "", node_token_INDEX.getText()));
 	} else if (node.getFirstChild().getNextSibling() != null && node.getFirstChild().getNextSibling().getText().equals(Constants.LEFT_SQ_BR)) {
 		AST node_token_VARNAME = node.getFirstChild();
 		AST node_token_VARTYPE = node_token_VARNAME.getNextSibling().getFirstChild();
@@ -361,16 +377,16 @@ private static void compile_assignment_expression(AST node) {
 		if (node_token_VARTYPE.getText().equals("int_array") || node_token_VARTYPE.getText().equals("string_array")) {
 			try { // Prirazujeme do promenne nove pole
 				int arrLen = Integer.parseInt(node_token_ARRLEN.getText());
-				byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, variableMap.get(node_token_VARNAME.getText()) + " " + arrLen, node_token_VARTYPE.getText()));
+				byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, variableMap.get(node_token_VARNAME.getText()) + " " + arrLen, node_token_VARTYPE.getText()));
 			} catch (NumberFormatException nfe) { // Pokusili jsme se vytvorit array o parametricke delce
 				String varName = node_token_ARRLEN.getText();
-				byteCode.addInstruction(new Instruction(Instruction.InsSet.LOAD_VAR, variableMap.get(varName) + ""));
-				byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, variableMap.get(node_token_VARNAME.getText()) + "", node_token_VARTYPE.getText()));
+				byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.LOAD_VAR, variableMap.get(varName) + ""));
+				byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, variableMap.get(node_token_VARNAME.getText()) + "", node_token_VARTYPE.getText()));
 			}	
 		} else { // Prirazujeme obsah polozky pole do nejake promenne
-			byteCode.addInstruction(new Instruction(Instruction.InsSet.LOAD_ARRAY, variableMap.get(node_token_VARTYPE.getText()) + "",
+			byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.LOAD_ARRAY, variableMap.get(node_token_VARTYPE.getText()) + "",
 					node_token_ARRLEN.getText()));
-			byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, variableMap.get(node_token_VARNAME.getText()) + "", node_token_VARNAME.getText() + " int"));
+			byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, variableMap.get(node_token_VARNAME.getText()) + "", node_token_VARNAME.getText() + " int"));
 		}
 	}	
 	else {
@@ -378,7 +394,7 @@ private static void compile_assignment_expression(AST node) {
 		AST node_token_VALUE = node_token_VARIABLE.getNextSibling();
 		compile_expression(node_token_VALUE);
 		String varType = getVarType(variableMap.get(node_token_VARIABLE.getText()));
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, variableMap.get(node_token_VARIABLE.getText()) + "", node_token_VARIABLE.getText() + " " + varType));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, variableMap.get(node_token_VARIABLE.getText()) + "", node_token_VARIABLE.getText() + " " + varType));
 	}
 }
 
@@ -398,7 +414,7 @@ private static void compile_function_call(AST node) {
 	}
 	String params = "";
 	for (String str : parameters) params += variableMap.get(str) + " ";
-	byteCode.addInstruction(new Instruction(Instruction.InsSet.FUNCALL, fName, params));
+	byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.FUNCALL, fName, params));
 	
 
 }
@@ -415,7 +431,7 @@ private static void compile_if_condition(AST node) { // TODO : slozene zavorky p
 	// if (...)
 	compile_expression(node_token_CONDEXPR);
 	
-	int PC_ifJump = byteCode.size() -1; // position of IF JUMP instruction
+	int PC_ifJump = byteCodes.get(byteCodes.size()-1).size() -1; // position of IF JUMP instruction
 	
 	// { ... } // if-part
 	compile_expression(node_token_IFEXPR); // compile if branch expression
@@ -426,9 +442,9 @@ private static void compile_if_condition(AST node) { // TODO : slozene zavorky p
 		node_token_IFEXPR = node_token_IFEXPR.getNextSibling();
 	};
 	
-	byteCode.addInstruction(new Instruction(Instruction.InsSet.JUMP, "")); // L1
+	byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.JUMP, "")); // L1
 	
-	int PC_jumpToL2 = byteCode.size() - 1; // position of JUMP to L2
+	int PC_jumpToL2 = byteCodes.get(byteCodes.size()-1).size() - 1; // position of JUMP to L2
 	
 	// else { ... } // else-part; compile only when present
 	if (node_token_ELSEEXPR != null) {
@@ -441,16 +457,16 @@ private static void compile_if_condition(AST node) { // TODO : slozene zavorky p
 		};
 	}
 	
-	byteCode.addInstruction(new Instruction(Instruction.InsSet.NOP, "")); // L2
+	byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.NOP, "")); // L2
 	
-	int PC_L2 = byteCode.size() - 1;
+	int PC_L2 = byteCodes.get(byteCodes.size()-1).size() - 1;
 	
 	// potrebuju:
 	// 1) kam skocit z if
-	byteCode.changeOperand(PC_ifJump, 0, (PC_jumpToL2+1) + "");
+	byteCodes.get(byteCodes.size()-1).changeOperand(PC_ifJump, 0, (PC_jumpToL2+1) + "");
 	
 	// 2) kam skocit z konce if-part
-	byteCode.changeOperand(PC_jumpToL2, 0, PC_L2 + "");
+	byteCodes.get(byteCodes.size()-1).changeOperand(PC_jumpToL2, 0, PC_L2 + "");
 }
 
 private static void compile_variable_definition(AST node) {
@@ -483,13 +499,13 @@ private static void compile_variable_definition(AST node) {
 		else varVal = node_token_VARVAL.getText();
 		if (isNumeric(varVal)) {
 			// v deklaraci prirazujeme cislo, muzeme ho hodit na stack a nahrat do promenne
-			byteCode.addInstruction(new Instruction(Instruction.InsSet.PUSH_NUMBER, varVal));
+			byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.PUSH_NUMBER, varVal));
 			intVarCodes.add(BC_VariableCount);
 		}
 		else if (isString(varVal)) {
 			// Je to String
 			varVal = varVal.substring(1, varVal.length()-1);
-			byteCode.addInstruction(new Instruction(Instruction.InsSet.PUSH_STRING, varVal));
+			byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.PUSH_STRING, varVal));
 			stringVarCodes.add(BC_VariableCount);
 		}
 		else {
@@ -497,26 +513,26 @@ private static void compile_variable_definition(AST node) {
 			compile_expression(node_token_ASSIGN.getFirstChild());
 			
 		}
-		byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, BC_VariableCount + "", node_token_VARNAME.getText() + " " + node_token_VARTYPE.getText()));
+		byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, BC_VariableCount + "", node_token_VARNAME.getText() + " " + node_token_VARTYPE.getText()));
 	} else { // ok, pracujeme s poli
 		AST node_token_ASSIGNCHECK = node_token_ASSIGN.getFirstChild().getFirstChild().getFirstChild();
 		if (node_token_VARTYPE.getText().equals(node_token_ASSIGNCHECK.getText())) { // deklarujeme nove pole
 			AST node_token_ARRLEN = node_token_ARRBRACKET.getFirstChild().getNextSibling().getFirstChild();
 			try {
 				int arrLen = Integer.parseInt(node_token_ARRLEN.getText());
-				byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, BC_VariableCount + " " + arrLen, node_token_VARTYPE.getText()));
+				byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, BC_VariableCount + " " + arrLen, node_token_VARTYPE.getText()));
 			} catch (NumberFormatException nfe) { // Pokusili jsme se vytvorit array o parametricke delce
 				String varName = node_token_ARRLEN.getText();
-				byteCode.addInstruction(new Instruction(Instruction.InsSet.LOAD_VAR, variableMap.get(varName) + ""));
-				byteCode.addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, BC_VariableCount + "", node_token_VARTYPE.getText()));
+				byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.LOAD_VAR, variableMap.get(varName) + ""));
+				byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.NEW_ARRAY, BC_VariableCount + "", node_token_VARTYPE.getText()));
 			}		
 			if (node_token_VARNAME.getText().equals("int_array")) intVarCodes.add(BC_VariableCount);
 			else stringVarCodes.add(BC_VariableCount);
 		} else { // jedna se o prirazeni hodnoty polozky nejakeho existujiciho pole do promenne
 			AST node_token_INDEX = node_token_ASSIGNCHECK.getNextSibling().getFirstChild();
-			byteCode.addInstruction(new Instruction(Instruction.InsSet.LOAD_ARRAY, variableMap.get(node_token_ASSIGNCHECK.getText()) + "",
+			byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.LOAD_ARRAY, variableMap.get(node_token_ASSIGNCHECK.getText()) + "",
 					node_token_INDEX.getText()));
-			byteCode.addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, BC_VariableCount + "", node_token_VARNAME.getText() + " " +node_token_VARTYPE.getText()));
+			byteCodes.get(byteCodes.size()-1).addInstruction(new Instruction(Instruction.InsSet.STORE_VAR, BC_VariableCount + "", node_token_VARNAME.getText() + " " +node_token_VARTYPE.getText()));
 		}
 	}
 	variableMap.put(node_token_VARNAME.getText(), BC_VariableCount);
@@ -574,7 +590,7 @@ private static void traverse (AST node, int depth)
          
          traverse(parser.getAST(), 0);
          replaceFunjumps();
-         byteCode.print();
+         for (ByteCode b : byteCodes) b.print();
          //exportByteCode(args[0]);
      } catch (IOException e) {
          e.printStackTrace();
@@ -588,7 +604,7 @@ private static void traverse (AST node, int depth)
  private static void exportByteCode(String filename) throws IOException {
 	 BufferedWriter out = new BufferedWriter(new FileWriter(filename + ".bytecode"));
 
-	 StringReader sr = byteCode.printToReader();
+	 StringReader sr = byteCodes.get(byteCodes.size()-1).printToReader();
 	 BufferedReader br = new BufferedReader(sr);
 	 
 	 String line = "";

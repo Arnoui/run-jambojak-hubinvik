@@ -18,8 +18,8 @@ public class MethodFrame implements Cloneable {
 	public MethodFrame(ByteCode byteCode, String header) {
 		this.byteCode = byteCode;
 		this.methodHeader = header;
-		init();
-		System.out.println("Initialized " + byteCode.getInstructions().size());
+		//init();
+		
 	}
 	
 	public void init() {
@@ -28,17 +28,13 @@ public class MethodFrame implements Cloneable {
 		this.maxPC = this.byteCode.size();
 		
 		String[] hParams = methodHeader.split(" ");
-		for (int i = hParams.length-1; i >= 3; i = i - 2) { // gotta iterate in reverse order, param values are on stack
-			String paramName = hParams[i];
-			String paramType = hParams[i-1];
-			ValuePair pair = new ValuePair(InterpreterContext.getInstance().popFromStack().getFirst(), paramType);
-			localVarPool.put(paramName, pair);
-		}
+
+//		System.out.println("Initialized " + byteCode.getInstructions().size());
 	}
 	
 	public void execute() {
 		for (; currPC < maxPC; currPC++) {
-			System.out.println("Executing, curr PC : " + currPC + ", maxPC is :" + maxPC);
+			//System.out.println("Executing, curr PC : " + currPC + ", maxPC is :" + maxPC);
 			BytecodeExecutor.executeInstruction(byteCode.insToString(byteCode.getInstruction(currPC)), this);
 		}
 	}
@@ -77,7 +73,7 @@ public class MethodFrame implements Cloneable {
 	
 	@Override
 	public MethodFrame clone() {
-		System.out.println("Cloning.. " + this.byteCode.getInstructions().size());
+		//System.out.println("Cloning.. " + this.byteCode.getInstructions().size());
 		return new MethodFrame(this.byteCode.clone(), this.methodHeader);		
 	}
 	

@@ -43,10 +43,13 @@ public class MethodLookup {
 	
 	public static void callMethod(String methodName, ValuePair[] params) {
 		MethodFrame method = MethodFrameFactory.getInstance().getNewFrame(methodName);
-		if (method != null ) method.execute();
-		else {
+		if (method != null ) {
+			method.init();
+			method.execute(); // Calls internal method
+		}
+		else { // Looking up the method in our bytecode failed
 			Object[] pVals = extractParams(params);
-			lookupMethod(methodName, pVals);
+			lookupMethod(methodName, pVals); // Calls external method
 		}		
 	}
 	
@@ -69,8 +72,8 @@ public class MethodLookup {
 			}
 			else if (methodName.equals("split")) {
 				params = evalParams(params, 2);
-				Object toSplit = params[0];
-				Object delim = params[1];
+				Object toSplit = params[1];
+				Object delim = params[0];
 				method = toSplit.getClass().getMethod("split", delim.getClass());
 				returnObj = method.invoke(toSplit, delim);
 			}

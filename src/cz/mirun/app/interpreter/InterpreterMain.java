@@ -26,9 +26,6 @@ import cz.mirun.app.interpreter.frames.MethodFrameFactory;
 
 public class InterpreterMain {
 
-	static ByteCode instructions;
-	static int maxPC, currPC;
-	
 	public static void main(String[] args) throws Exception {
 				
 		 //if (args.length != 1) {
@@ -36,10 +33,6 @@ public class InterpreterMain {
 	         //System.exit(1);
 	     //}
 		String filename = "out.txt";
-		
-		instructions = new ByteCode();
-		maxPC = 0;
-		currPC = 0;
 		
 		FileInputStream fis = new FileInputStream(new File(filename));
 		DataInputStream in = new DataInputStream(fis);
@@ -50,7 +43,9 @@ public class InterpreterMain {
 		in.close();
 		try {
 			MethodFrame main = MethodFrameFactory.getInstance().getNewFrame("main");
+			main.init();
 			main.execute();
+			System.out.println("Vysledek volani programu (posledni ulozena promenna) je : "+ main.getLocalVarPool().get("14").getFirst());
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			throw new Error("Severe error while interpreting bytecode! Possibly invalid bytecode structure? \nOriginal stack trace above");
@@ -60,7 +55,7 @@ public class InterpreterMain {
 		//for (int i = 0; i < result.length; i++) System.out.println(result[i]);
 		
 		//writeOutput(filename, returnResult);
-		
+
 		InterpreterContext.getInstance().cleanContext();
 		
 	}
@@ -75,19 +70,22 @@ public class InterpreterMain {
 	 }
 	
 	private static void scanInstructions(BufferedReader br) throws IOException {
-		instructions.addInstruction(new Instruction(Instruction.InsSet.NOP));
+		ByteCode instructions = new ByteCode();
 		String strLine, methodHeader = null;
 		while ((strLine = br.readLine()) != null)   {
 			if (strLine.split(" ")[1].equals("FUNSTART")) {
 				if (methodHeader != null) {
 					MethodFrameFactory.getInstance().addNewPrototype(instructions, methodHeader, methodHeader.split(" ")[2]);
-					instructions.getInstructions().clear();
+					//instructions.print();
+					instructions = new ByteCode();					
 				}
+				instructions.addInstruction(new Instruction(Instruction.InsSet.NOP));
 				methodHeader = strLine;
 			}
 			else instructions.addInstruction(ByteCode.getInstructionFromString(strLine));			
 		}
-		MethodFrameFactory.getInstance().addNewPrototype(instructions.clone(), methodHeader, methodHeader.split(" ")[2]);
+		MethodFrameFactory.getInstance().addNewPrototype(instructions, methodHeader, methodHeader.split(" ")[2]);
+		//instructions.print();
 		//instructions.getInstructions().clear();
 
 	}
